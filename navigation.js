@@ -1,5 +1,5 @@
 (() => {
-const API_URL = "https://script.google.com/macros/s/AKfycbxqJukWhIxtRm-XmZLZUNdfQLu0vfL6QnAwG_K4uCubRVqrWC-9dOpNAMYuvxJEUy44Kg/exec";
+const NAV_API_URL = "https://script.google.com/macros/s/AKfycbxqJukWhIxtRm-XmZLZUNdfQLu0vfL6QnAwG_K4uCubRVqrWC-9dOpNAMYuvxJEUy44Kg/exec";
 
 class ReadersNav extends HTMLElement {
   connectedCallback() {
@@ -304,7 +304,7 @@ class ReadersNav extends HTMLElement {
           }
 
           // Register in members sheet
-          const res = await fetch(API_URL, {
+          const res = await fetch(NAV_API_URL, {
             method: "POST",
             mode: "cors",
             headers: {
@@ -321,7 +321,7 @@ class ReadersNav extends HTMLElement {
           }
         } else {
           // Login check process
-          const res = await fetch(`${API_URL}?action=checkMember&id=${encodeURIComponent(idVal)}`);
+          const res = await fetch(`${NAV_API_URL}?action=checkMember&id=${encodeURIComponent(idVal)}`);
           const result = await res.json();
           if (!result.exists) {
             throw new Error("존재하지 않는 회원 ID입니다. 최초 가입이시라면 체크박스를 활성화해 주세요.");
@@ -346,7 +346,7 @@ class ReadersNav extends HTMLElement {
     // Prefetch book list on page load
     let cachedBooks = [];
     const prefetchBooks = () => {
-      fetch(API_URL + "?action=getBooks")
+      fetch(NAV_API_URL + "?action=getBooks")
         .then(res => res.json())
         .then(books => {
           cachedBooks = books;
@@ -390,7 +390,7 @@ class ReadersNav extends HTMLElement {
         });
       } else {
         // Fetch on-demand if cache is empty
-        fetch(API_URL + "?action=getBooks")
+        fetch(NAV_API_URL + "?action=getBooks")
           .then(res => res.json())
           .then(books => {
             cachedBooks = books;
@@ -468,7 +468,7 @@ class ReadersNav extends HTMLElement {
       topicSubmitBtn.textContent = "등록 중...";
 
       try {
-        const res = await fetch(API_URL, {
+        const res = await fetch(NAV_API_URL, {
           method: "POST",
           mode: "cors",
           headers: {
@@ -579,7 +579,7 @@ class ReadersNav extends HTMLElement {
       adminSubmitBtn.textContent = "등록 중...";
 
       try {
-        const res = await fetch(API_URL, {
+        const res = await fetch(NAV_API_URL, {
           method: "POST",
           mode: "cors",
           headers: {
@@ -663,7 +663,7 @@ class ReadersNav extends HTMLElement {
       bookSubmitBtn.textContent = "등록 중...";
 
       try {
-        const res = await fetch(API_URL, {
+        const res = await fetch(NAV_API_URL, {
           method: "POST",
           mode: "cors",
           headers: {
@@ -803,7 +803,7 @@ class ReadersArchive extends HTMLElement {
     }
 
     // 2. Fetch from sheet in the background and check if there are any updates
-    fetchWithTimeout(API_URL + "?action=getArchive")
+    fetchWithTimeout(NAV_API_URL + "?action=getArchive")
       .then(res => {
         if (!res.ok) {
           throw new Error(`HTTP 에러! 상태코드: ${res.status}`);
@@ -1014,7 +1014,7 @@ class ReadersTopics extends HTMLElement {
     };
 
     const loadData = () => {
-      fetch(API_URL + "?action=getTopics")
+      fetch(NAV_API_URL + "?action=getTopics")
         .then(res => res.json())
         .then(data => {
           data.sort((a, b) => {
