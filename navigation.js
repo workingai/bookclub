@@ -1063,10 +1063,8 @@ class ReadersTopics extends HTMLElement {
 customElements.define('readers-topics', ReadersTopics);
 
 // ============================================================
-// Meeting Info Loader (same pattern as Topics/Archive)
+// Meeting Info Loader — no cache, always fetch from API
 // ============================================================
-const MEETING_CACHE_KEY = "readers_meeting_cache";
-
 function renderMeeting(latest) {
   if (!latest) return;
 
@@ -1147,47 +1145,28 @@ function renderMeeting(latest) {
 }
 
 function loadLatestMeeting() {
-  const cached = localStorage.getItem(MEETING_CACHE_KEY);
-  let cachedObj = null;
-
-  // 1. Render from cache immediately
-  if (cached) {
-    try {
-      cachedObj = JSON.parse(cached);
-      if (cachedObj && (cachedObj.date || cachedObj.place)) {
-        renderMeeting(cachedObj);
-      }
-    } catch (e) {
-      console.error("Failed to parse cached meeting", e);
-    }
-  }
-
-  // 2. Always fetch fresh data (same pattern as Topics/Archive)
   fetch(NAV_API_URL + "?action=getMeetings")
-    .then(res => res.json())
-    .then(data => {
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
       if (data && data.length > 0) {
-        const latest = data[data.length - 1];
-        const hasUpdates = JSON.stringify(latest) !== JSON.stringify(cachedObj);
-        if (hasUpdates) {
-          localStorage.setItem(MEETING_CACHE_KEY, JSON.stringify(latest));
-          renderMeeting(latest);
-        }
+        var latest = data[data.length - 1];
+        renderMeeting(latest);
       }
     })
-    .catch(err => {
-      console.error("Failed to load meeting info from spreadsheet", err);
+    .catch(function(err) {
+      console.error("Failed to load meeting info:", err);
     });
 }
 
 // Run after DOM is ready
-document.addEventListener("DOMContentLoaded", () => {
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", loadLatestMeeting);
+} else {
   loadLatestMeeting();
-});
+}
 
 // Reload when admin registers a new meeting
-window.addEventListener("readers-meeting-added", () => {
-  loadLatestMeeting();
-});
+window.addEventListener("readers-meeting-added", loadLatestMeeting);
 
 })();
+
