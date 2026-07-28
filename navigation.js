@@ -712,7 +712,7 @@ class ReadersArchive extends HTMLElement {
           width: 100%;
         }
       </style>
-      <div id="archive-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;align-items:start;">
+      <div id="archive-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;align-items:stretch;">
         <div style="grid-column: span 4; text-align: center; color: oklch(0.5 0.02 60); font-size: 14px; padding: 40px 0;">도서 목록을 불러오는 중입니다...</div>
       </div>
       <div style="text-align:center;margin-top:48px;">
@@ -756,16 +756,19 @@ class ReadersArchive extends HTMLElement {
         }
 
         const item = document.createElement("div");
+        item.style.display = "flex";
+        item.style.flexDirection = "column";
+        item.style.height = "100%";
         item.style.opacity = "0";
         item.style.transform = "translateY(15px)";
         item.style.transition = "opacity 0.5s ease, transform 0.5s ease";
         
         item.innerHTML = `
-          <div style="width:100%; height:0; padding-top:146.67%; border-radius:8px; overflow:hidden; margin-bottom:12px; box-shadow:0 8px 24px rgba(0,0,0,0.06); background:#fcfcfc; position:relative;">
+          <div style="width:100%; height:0; padding-top:146.67%; border-radius:8px; overflow:hidden; margin-bottom:12px; box-shadow:0 8px 24px rgba(0,0,0,0.06); background:#fcfcfc; position:relative; flex-shrink:0;">
             <img src="${book.url || ''}" alt="${book.name || ''}" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; display:block;" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\' viewBox=\\'0 0 100 100\\'><rect width=\\'100\\' height=\\'100\\' fill=\\'%23efefef\\'/><text x=\\'50%\\' y=\\'50%\\' dominant-baseline=\\'middle\\' text-anchor=\\'middle\\' font-size=\\'12\\' fill=\\'%23999\\'>이미지 없음</text></svg>'">
           </div>
-          <div style="font-size:14px; font-weight:600; margin-bottom:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:'Noto Sans KR',sans-serif;">${book.name || '제목 없음'}</div>
-          <div style="font-size:12px; color:oklch(0.5 0.02 60); display:flex; justify-content:space-between; align-items:center; font-family:'Noto Sans KR',sans-serif;">
+          <div style="font-size:14px; font-weight:600; margin-bottom:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:'Noto Sans KR',sans-serif; flex-shrink:0;">${book.name || '제목 없음'}</div>
+          <div style="font-size:12px; color:oklch(0.5 0.02 60); display:flex; justify-content:space-between; align-items:center; font-family:'Noto Sans KR',sans-serif; margin-top:auto; flex-shrink:0;">
             <span>${monthString}</span>
             <span style="font-size:11px; opacity:0.8;">${book.author || ''}</span>
           </div>
@@ -934,7 +937,7 @@ class ReadersTopics extends HTMLElement {
 
     const startRolling = () => {
       if (rollInterval) clearInterval(rollInterval);
-      if (topicsData.length <= 5) {
+      if (topicsData.length <= 3) {
         container.style.maxHeight = "";
         container.style.overflow = "";
         return;
@@ -993,13 +996,13 @@ class ReadersTopics extends HTMLElement {
         container.appendChild(row);
       });
 
-      // Show exactly 5 items, hide and roll the rest
-      if (topicsData.length > 5) {
+      // Show exactly 3 items, hide and roll the rest
+      if (topicsData.length > 3) {
         setTimeout(() => {
           const items = container.querySelectorAll(".topic-item");
-          if (items.length > 5) {
+          if (items.length > 3) {
             let totalHeight = 0;
-            for (let i = 0; i < 5; i++) {
+            for (let i = 0; i < 3; i++) {
               totalHeight += items[i].offsetHeight + 16; // height + gap
             }
             container.style.maxHeight = `${totalHeight - 16}px`;
