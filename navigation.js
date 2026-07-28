@@ -77,6 +77,13 @@ class ReadersArchive extends HTMLElement {
       btn.style.color = "#2A6B52";
     });
 
+    const fetchWithTimeout = (url, options = {}, timeout = 8000) => {
+      return Promise.race([
+        fetch(url, options),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('요청 시간 초과 (Timeout)')), timeout))
+      ]);
+    };
+
     const renderArchive = () => {
       grid.innerHTML = "";
       const slice = archiveData.slice(0, visibleCount);
@@ -125,9 +132,17 @@ class ReadersArchive extends HTMLElement {
       renderArchive();
     });
 
-    fetch(API_URL + "?action=getArchive")
-      .then(res => res.json())
+    fetchWithTimeout(API_URL + "?action=getArchive")
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`HTTP 에러! 상태코드: ${res.status}`);
+        }
+        return res.json();
+      })
       .then(data => {
+        if (data.error) {
+          throw new Error(data.error);
+        }
         data.sort((a, b) => {
           const dateA = new Date(a.date || a.data);
           const dateB = new Date(b.date || b.data);
@@ -138,7 +153,12 @@ class ReadersArchive extends HTMLElement {
       })
       .catch(err => {
         console.error("Failed to load archive", err);
-        grid.innerHTML = `<div style="grid-column: span 4; text-align: center; color: #ff4d4f; font-size: 14px; padding: 40px 0; font-family:'Noto Sans KR',sans-serif;">목록을 불러오지 못했습니다. 다시 시도해 주세요.</div>`;
+        grid.innerHTML = `
+          <div style="grid-column: span 4; text-align: center; color: #ff4d4f; font-size: 14px; padding: 40px 0; font-family:'Noto Sans KR',sans-serif;">
+            목록을 불러오지 못했습니다.<br>
+            <span style="font-size:12px; color:oklch(0.5 0.02 60); display:inline-block; margin-top:8px;">상세 오류: ${err.message || err.toString()}</span>
+          </div>
+        `;
       });
   }
 }
