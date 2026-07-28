@@ -77,6 +77,67 @@ class ReadersNav extends HTMLElement {
           <button id="topic-modal-submit-btn" style="width:100%; background:#2A6B52; color:white; border:none; padding:12px; border-radius:6px; font-weight:600; font-size:14px; cursor:pointer; transition:background 0.2s ease;">등록 완료</button>
         </div>
       </div>
+
+      <!-- Admin Modal Overlay -->
+      <div id="admin-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
+        <div style="background:white; padding:32px; border-radius:12px; width:440px; box-shadow:0 20px 40px rgba(0,0,0,0.2); box-sizing:border-box; font-family:'Noto Sans KR',sans-serif; position:relative; color: #333; max-height: 90vh; overflow-y: auto;">
+          <button id="admin-modal-close-btn" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:22px; cursor:pointer; color:#999; line-height:1;">&times;</button>
+          
+          <h3 style="margin:0 0 24px; font-size:18px; font-weight:700; color:#2A6B52; border-bottom: 2px solid #E8F0ED; padding-bottom: 12px;">모임 일정 관리 (Admin)</h3>
+          
+          <!-- Date -->
+          <div style="margin-bottom:16px;">
+            <label style="display:block; font-size:13px; color:#444; margin-bottom:8px; font-weight:600;">날짜를 입력하세요</label>
+            <input type="date" id="admin-date-input" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px; outline:none; font-family:inherit;">
+          </div>
+          
+          <!-- Time -->
+          <div style="margin-bottom:16px;">
+            <label style="display:block; font-size:13px; color:#444; margin-bottom:8px; font-weight:600;">시간을 입력하세요</label>
+            <div style="display:flex; gap:8px;">
+              <select id="admin-ampm-select" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px; font-size:14px; outline:none; background:white; font-family:inherit;">
+                <option value="오후">오후</option>
+                <option value="오전">오전</option>
+              </select>
+              <select id="admin-hour-select" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px; font-size:14px; outline:none; background:white; font-family:inherit;">
+                <option value="7">7시</option>
+                <option value="1">1시</option>
+                <option value="2">2시</option>
+                <option value="3">3시</option>
+                <option value="4">4시</option>
+                <option value="5">5시</option>
+                <option value="6">6시</option>
+                <option value="8">8시</option>
+                <option value="9">9시</option>
+                <option value="10">10시</option>
+                <option value="11">11시</option>
+                <option value="12">12시</option>
+              </select>
+              <select id="admin-min-select" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px; font-size:14px; outline:none; background:white; font-family:inherit;">
+                <option value="30">30분</option>
+                <option value="00">00분</option>
+              </select>
+            </div>
+          </div>
+          
+          <!-- Notice -->
+          <div style="margin-bottom:16px;">
+            <label style="display:block; font-size:13px; color:#444; margin-bottom:8px; font-weight:600;">공지할 사항이 있나요?</label>
+            <input type="text" id="admin-notice-input" placeholder="공지할 내용을 입력해 주세요" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px; outline:none; font-family:inherit;">
+          </div>
+          
+          <!-- Place & Map URL -->
+          <div style="margin-bottom:24px;">
+            <label style="display:block; font-size:13px; color:#444; margin-bottom:8px; font-weight:600;">장소를 등록하세요</label>
+            <input type="text" id="admin-place-input" placeholder="장소명 (예: 강남역 인근 커뮤니티룸)" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px; outline:none; font-family:inherit; margin-bottom:8px;">
+            <input type="url" id="admin-map-input" placeholder="지도의 URL 링크를 입력하세요" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px; outline:none; font-family:inherit;">
+          </div>
+          
+          <div id="admin-modal-error-msg" style="color:#d93025; font-size:12px; margin-bottom:16px; display:none; line-height:1.4;"></div>
+          
+          <button id="admin-modal-submit-btn" style="width:100%; background:#2A6B52; color:white; border:none; padding:12px; border-radius:6px; font-weight:600; font-size:14px; cursor:pointer; transition:background 0.2s ease;">등록 완료</button>
+        </div>
+      </div>
     `;
 
     // Add styles to Shadow Root
@@ -322,17 +383,123 @@ class ReadersNav extends HTMLElement {
           throw new Error(result.error || "질문 등록에 실패했습니다.");
         }
 
-        alert("Topic이 성공적으로 등록되었습니다!");
+        const optimisticTopic = {
+          ID: savedUser,
+          Date: new Date().toISOString().slice(0, 10).replace(/-/g, ""),
+          Book: bookVal,
+          Topic: topicVal
+        };
+
         topicModal.style.display = "none";
+        alert("Topic이 성공적으로 등록되었습니다!");
         
         // Notify other components (like ReadersTopics) to refresh list
-        window.dispatchEvent(new CustomEvent("readers-topic-added"));
+        window.dispatchEvent(new CustomEvent("readers-topic-added", { detail: optimisticTopic }));
       } catch (err) {
         topicErrorMsg.textContent = err.message || err.toString();
         topicErrorMsg.style.display = "block";
       } finally {
         topicSubmitBtn.disabled = false;
         topicSubmitBtn.textContent = "등록 완료";
+      }
+    });
+
+    // Admin Modal elements
+    const adminModal = shadow.getElementById("admin-modal");
+    const adminCloseBtn = shadow.getElementById("admin-modal-close-btn");
+    const adminSubmitBtn = shadow.getElementById("admin-modal-submit-btn");
+    const adminDateInput = shadow.getElementById("admin-date-input");
+    const adminAmPm = shadow.getElementById("admin-ampm-select");
+    const adminHour = shadow.getElementById("admin-hour-select");
+    const adminMin = shadow.getElementById("admin-min-select");
+    const adminNoticeInput = shadow.getElementById("admin-notice-input");
+    const adminPlaceInput = shadow.getElementById("admin-place-input");
+    const adminMapInput = shadow.getElementById("admin-map-input");
+    const adminErrorMsg = shadow.getElementById("admin-modal-error-msg");
+
+    // Close admin modal
+    adminCloseBtn.addEventListener("click", () => {
+      adminModal.style.display = "none";
+    });
+
+    // Listen to admin event trigger
+    window.addEventListener("open-admin-modal", () => {
+      const savedUser = localStorage.getItem("readers_user_id");
+      if (savedUser !== "정훈") {
+        alert("관리자만 접근할 수 있습니다.");
+        return;
+      }
+      
+      // Reset fields
+      adminDateInput.value = "";
+      adminNoticeInput.value = "";
+      adminPlaceInput.value = "";
+      adminMapInput.value = "";
+      adminErrorMsg.style.display = "none";
+      
+      adminModal.style.display = "flex";
+    });
+
+    // Admin Submit
+    adminSubmitBtn.addEventListener("click", async () => {
+      const dateVal = adminDateInput.value;
+      const ampmVal = adminAmPm.value;
+      const hourVal = adminHour.value;
+      const minVal = adminMin.value;
+      const noticeVal = adminNoticeInput.value.trim();
+      const placeVal = adminPlaceInput.value.trim();
+      const mapVal = adminMapInput.value.trim();
+      
+      adminErrorMsg.style.display = "none";
+
+      if (!dateVal) {
+        adminErrorMsg.textContent = "날짜를 입력하세요.";
+        adminErrorMsg.style.display = "block";
+        return;
+      }
+      if (!placeVal) {
+        adminErrorMsg.textContent = "장소명을 입력하세요.";
+        adminErrorMsg.style.display = "block";
+        return;
+      }
+
+      const timeVal = `${ampmVal} ${hourVal}시 ${minVal}분`;
+
+      adminSubmitBtn.disabled = true;
+      adminSubmitBtn.textContent = "등록 중...";
+
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          mode: "cors",
+          headers: {
+            "Content-Type": "text/plain"
+          },
+          body: JSON.stringify({
+            action: "addMeeting",
+            date: dateVal,
+            time: timeVal,
+            notice: noticeVal,
+            place: placeVal,
+            map: mapVal
+          })
+        });
+        const result = await res.json();
+        if (!result.success) {
+          throw new Error(result.error || "등록에 실패했습니다.");
+        }
+
+        alert("다음 모임 일정이 성공적으로 등록되었습니다!");
+        adminModal.style.display = "none";
+        
+        // Notify page to refresh notices if applicable
+        window.dispatchEvent(new CustomEvent("readers-meeting-added"));
+      } catch (err) {
+        adminErrorMsg.textContent = err.message || err.toString();
+        adminErrorMsg.style.display = "block";
+      } finally {
+        adminSubmitBtn.disabled = false;
+        adminSubmitBtn.textContent = "등록 완료";
       }
     });
 
@@ -629,9 +796,9 @@ class ReadersTopics extends HTMLElement {
         .then(res => res.json())
         .then(data => {
           data.sort((a, b) => {
-            const dateA = new Date(a.date || a.Data || 0);
-            const dateB = new Date(b.date || b.Data || 0);
-            return dateB - dateA;
+            const valA = String(a.Date || a.date || '').replace(/[^0-9]/g, '');
+            const valB = String(b.Date || b.date || '').replace(/[^0-9]/g, '');
+            return Number(valB) - Number(valA);
           });
 
           const hasUpdates = JSON.stringify(data) !== JSON.stringify(topicsData);
@@ -660,7 +827,13 @@ class ReadersTopics extends HTMLElement {
     loadData();
 
     // Listen to custom event when a new topic is added
-    window.addEventListener("readers-topic-added", () => {
+    window.addEventListener("readers-topic-added", (e) => {
+      if (e.detail) {
+        // Optimistic UI Update: Prepend newly added topic immediately
+        topicsData = [e.detail, ...topicsData.filter(item => !(item.Topic === e.detail.Topic && item.ID === e.detail.ID))];
+        localStorage.setItem(CACHE_KEY, JSON.stringify(topicsData));
+        renderTopics();
+      }
       loadData();
     });
   }
