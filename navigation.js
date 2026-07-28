@@ -337,3 +337,178 @@ class ReadersArchive extends HTMLElement {
   }
 }
 customElements.define('readers-archive', ReadersArchive);
+
+class ReadersTopics extends HTMLElement {
+  connectedCallback() {
+    const shadow = this.attachShadow({ mode: 'open' });
+    shadow.innerHTML = `
+      <style>
+        :host {
+          display: block;
+          width: 100%;
+          font-family: 'Noto Sans KR', sans-serif;
+        }
+        .topic-card {
+          flex: 0 0 calc((100% - 48px) / 3);
+          box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+          padding: 28px 24px;
+          background: #FFFFFF;
+          border: 1px solid #DCDCDC;
+          border-radius: 12px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+          min-height: 220px;
+          justify-content: space-between;
+        }
+        @media (max-width: 900px) {
+          .topic-card {
+            flex: 0 0 calc((100% - 24px) / 2);
+          }
+        }
+        @media (max-width: 600px) {
+          .topic-card {
+            flex: 0 0 100%;
+          }
+        }
+      </style>
+      <div style="display: flex; align-items: center; justify-content: center; position: relative; width: 100%; box-sizing: border-box;">
+        <span style="font-family: Georgia, serif; font-size: 100px; color: #2A6B52; opacity: 0.15; line-height: 1; margin-right: 16px; user-select: none; align-self: flex-start; margin-top: -24px;">“</span>
+        
+        <div id="carousel-viewport" style="overflow: hidden; width: 100%; position: relative;">
+          <div id="carousel-track" style="display: flex; gap: 24px; transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94); padding: 12px 4px;">
+            <div style="width: 100%; text-align: center; color: oklch(0.5 0.02 60); font-size: 14px; padding: 40px 0;">질문 목록을 불러오는 중입니다...</div>
+          </div>
+        </div>
+        
+        <span style="font-family: Georgia, serif; font-size: 100px; color: #2A6B52; opacity: 0.15; line-height: 1; margin-left: 16px; user-select: none; align-self: flex-end; margin-bottom: -44px;">”</span>
+      </div>
+      
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 24px; width: 100%; box-sizing: border-box; padding: 0 4px;">
+        <div></div>
+        <div style="display: flex; gap: 12px;">
+          <button id="prev-btn" style="background: white; border: 1px solid #DCDCDC; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #2A6B52; font-weight: bold; box-shadow: 0 4px 8px rgba(0,0,0,0.05); transition: all 0.2s ease;">&lt;</button>
+          <button id="next-btn" style="background: white; border: 1px solid #DCDCDC; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #2A6B52; font-weight: bold; box-shadow: 0 4px 8px rgba(0,0,0,0.05); transition: all 0.2s ease;">&gt;</button>
+        </div>
+      </div>
+    `;
+
+    let topicsData = [];
+    let currentIndex = 0;
+
+    const track = shadow.getElementById("carousel-track");
+    const prevBtn = shadow.getElementById("prev-btn");
+    const nextBtn = shadow.getElementById("next-btn");
+
+    const getVisibleCount = () => {
+      const width = window.innerWidth;
+      if (width <= 600) return 1;
+      if (width <= 900) return 2;
+      return 3;
+    };
+
+    const getMaxIndex = () => {
+      return Math.max(0, topicsData.length - getVisibleCount());
+    };
+
+    const updateCarousel = () => {
+      if (track.children.length === 0 || topicsData.length === 0) return;
+      const cardWidth = track.children[0].getBoundingClientRect().width;
+      const gap = 24;
+      const offset = currentIndex * (cardWidth + gap);
+      track.style.transform = `translateX(-${offset}px)`;
+
+      const maxIdx = getMaxIndex();
+      prevBtn.style.opacity = currentIndex === 0 ? "0.3" : "1";
+      prevBtn.style.cursor = currentIndex === 0 ? "default" : "pointer";
+      nextBtn.style.opacity = currentIndex >= maxIdx ? "0.3" : "1";
+      nextBtn.style.cursor = currentIndex >= maxIdx ? "default" : "pointer";
+    };
+
+    prevBtn.addEventListener("click", () => {
+      if (currentIndex > 0) {
+        currentIndex--;
+        updateCarousel();
+      }
+    });
+
+    nextBtn.addEventListener("click", () => {
+      if (currentIndex < getMaxIndex()) {
+        currentIndex++;
+        updateCarousel();
+      }
+    });
+
+    window.addEventListener("resize", () => {
+      if (currentIndex > getMaxIndex()) {
+        currentIndex = getMaxIndex();
+      }
+      updateCarousel();
+    });
+
+    const renderTopics = () => {
+      track.innerHTML = "";
+      if (topicsData.length === 0) {
+        track.innerHTML = `<div style="width: 100%; text-align: center; color: oklch(0.5 0.02 60); font-size: 14px; padding: 40px 0;">등록된 질문이 없습니다. 첫 질문을 등록해 보세요!</div>`;
+        return;
+      }
+
+      topicsData.forEach(item => {
+        const card = document.createElement("div");
+        card.className = "topic-card";
+        card.innerHTML = `
+          <div>
+            <div style="background: #E8F0ED; color: #2A6B52; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 4px; display: inline-block; margin-bottom: 14px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family:'Noto Sans KR', sans-serif;">
+              ${item.Book || '자유 선택 도서'}
+            </div>
+            <div style="font-size: 15px; font-weight: 500; line-height: 1.6; color: #333; font-family:'Noto Sans KR', sans-serif; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">
+              ${item.Topic || '질문 내용이 없습니다.'}
+            </div>
+          </div>
+          <div style="font-size: 13px; color: oklch(0.5 0.02 60); font-weight: 600; text-align: right; margin-top: 14px; font-family:'Noto Sans KR', sans-serif;">
+            — ${item.ID || '익명'}
+          </div>
+        `;
+        track.appendChild(card);
+      });
+
+      currentIndex = 0;
+      setTimeout(updateCarousel, 50);
+    };
+
+    const CACHE_KEY = "readers_topics_cache";
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      try {
+        topicsData = JSON.parse(cached);
+        renderTopics();
+      } catch (e) {
+        console.error("Failed to parse topics cache", e);
+      }
+    }
+
+    fetch(API_URL + "?action=getTopics")
+      .then(res => res.json())
+      .then(data => {
+        data.sort((a, b) => {
+          const dateA = new Date(a.date || a.Data || 0);
+          const dateB = new Date(b.date || b.Data || 0);
+          return dateB - dateA;
+        });
+
+        const hasUpdates = JSON.stringify(data) !== JSON.stringify(topicsData);
+        if (hasUpdates) {
+          topicsData = data;
+          localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+          renderTopics();
+        }
+      })
+      .catch(err => {
+        console.error("Failed to load topics", err);
+        if (topicsData.length === 0) {
+          track.innerHTML = `<div style="width: 100%; text-align: center; color: #ff4d4f; font-size: 14px; padding: 40px 0;">질문 목록을 불러오지 못했습니다. 다시 시도해 주세요.</div>`;
+        }
+      });
+  }
+}
+customElements.define('readers-topics', ReadersTopics);
