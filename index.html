@@ -61,7 +61,7 @@
         <p style="font-size:16px;line-height:1.7;color:rgba(255,255,255,0.75);margin:0 0 36px;max-width:520px;">가볍게 읽고, 편하게 이야기 나누는 독서 모임입니다.<br>이번 달 책과 모임 소식을 확인해보세요.</p>
         <div style="display:flex;gap:14px;">
           <a href="#notice" style="background:oklch(0.85 0.06 60);color:oklch(0.2 0.02 20);padding:14px 28px;border-radius:8px;font-weight:600;font-size:15px;transition:all 0.2s ease;">이번 모임 안내</a>
-          <a href="#apply" style="border:1.5px solid rgba(255,255,255,0.4);color:white;padding:14px 28px;border-radius:8px;font-weight:600;font-size:15px;transition:all 0.2s ease;backdrop-filter:blur(4px);">Topic 등록하기</a>
+          <a href="#apply" onclick="event.preventDefault(); window.dispatchEvent(new CustomEvent('open-topic-modal'))" style="border:1.5px solid rgba(255,255,255,0.4);color:white;padding:14px 28px;border-radius:8px;font-weight:600;font-size:15px;transition:all 0.2s ease;backdrop-filter:blur(4px);">Topic 등록하기</a>
         </div>
       </div>
 
@@ -148,7 +148,7 @@
       
       <readers-topics></readers-topics>
       <div style="text-align:left;">
-        <a href="#apply" style="display:inline-block;background:#2A6B52;color:white;padding:16px 36px;border-radius:8px;font-weight:700;font-size:16px;text-decoration:none;transition:background 0.2s ease;box-shadow:0 10px 20px -5px rgba(42, 107, 82, 0.3);">Topic 등록하기 →</a>
+        <a href="#apply" onclick="event.preventDefault(); window.dispatchEvent(new CustomEvent('open-topic-modal'))" style="display:inline-block;background:#2A6B52;color:white;padding:16px 36px;border-radius:8px;font-weight:700;font-size:16px;text-decoration:none;transition:background 0.2s ease;box-shadow:0 10px 20px -5px rgba(42, 107, 82, 0.3);">Topic 등록하기 →</a>
       </div>
     </div>
   </div>
@@ -159,7 +159,7 @@
       <div style="max-width:640px;margin:0;">
         <div style="font-family:'Noto Serif KR',serif;font-size:32px;font-weight:700;color:oklch(0.98 0.01 60);margin-bottom:14px;">이번 달 모임, 함께해요</div>
         <div style="font-size:16px;line-height:1.8;color:oklch(0.9 0.02 60);margin-bottom:32px;">아래 버튼으로 신청서를 남겨주시면 자세한 안내를 드릴게요. 처음이신 분도 언제든 환영합니다.</div>
-        <a href="#" style="display:inline-block;background:oklch(0.98 0.01 60);color:#2A6B52;padding:16px 36px;border-radius:8px;font-weight:700;font-size:16px;">Topic 등록하기 →</a>
+        <a href="#" onclick="event.preventDefault(); window.dispatchEvent(new CustomEvent('open-topic-modal'))" style="display:inline-block;background:oklch(0.98 0.01 60);color:#2A6B52;padding:16px 36px;border-radius:8px;font-weight:700;font-size:16px;">Topic 등록하기 →</a>
         <div style="font-size:13px;color:oklch(0.85 0.02 60);margin-top:16px;">신청 마감: 8월 13일 (목)</div>
       </div>
     </div>

@@ -51,6 +51,32 @@ class ReadersNav extends HTMLElement {
           <button id="modal-submit-btn" style="width:100%; background:#2A6B52; color:white; border:none; padding:12px; border-radius:6px; font-weight:600; font-size:14px; cursor:pointer; transition:background 0.2s ease;">확인</button>
         </div>
       </div>
+
+      <!-- Topic Registration Modal Overlay -->
+      <div id="topic-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
+        <div style="background:white; padding:32px; border-radius:12px; width:420px; box-shadow:0 20px 40px rgba(0,0,0,0.2); box-sizing:border-box; font-family:'Noto Sans KR',sans-serif; position:relative; color: #333;">
+          <button id="topic-modal-close-btn" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:22px; cursor:pointer; color:#999; line-height:1;">&times;</button>
+          
+          <h3 style="margin:0 0 4px; font-size:18px; font-weight:700; color:#2A6B52;">Topic 등록하기</h3>
+          <div id="topic-user-display" style="font-size:13px; color:#666; margin-bottom:24px; font-weight:500;">등록자: 님</div>
+          
+          <div style="margin-bottom:20px;">
+            <label style="display:block; font-size:13px; color:#444; margin-bottom:8px; font-weight:600;">어떤 책에 대한 토픽인가요?</label>
+            <select id="topic-book-select" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px; outline:none; font-family:inherit; background: white; cursor: pointer;">
+              <!-- Loaded dynamically -->
+            </select>
+          </div>
+          
+          <div style="margin-bottom:24px;">
+            <label style="display:block; font-size:13px; color:#444; margin-bottom:8px; font-weight:600;">이 책에 대해 함께 이야기하고 싶은 질문은 무엇인가요?</label>
+            <textarea id="topic-content-input" placeholder="이야기 나누고 싶은 질문이나 토픽 내용을 입력해 주세요." style="width:100%; height:120px; padding:12px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px; outline:none; font-family:inherit; resize: none; line-height:1.5;"></textarea>
+          </div>
+          
+          <div id="topic-modal-error-msg" style="color:#d93025; font-size:12px; margin-bottom:16px; display:none; line-height:1.4;"></div>
+          
+          <button id="topic-modal-submit-btn" style="width:100%; background:#2A6B52; color:white; border:none; padding:12px; border-radius:6px; font-weight:600; font-size:14px; cursor:pointer; transition:background 0.2s ease;">등록 완료</button>
+        </div>
+      </div>
     `;
 
     // Add styles to Shadow Root
@@ -82,6 +108,15 @@ class ReadersNav extends HTMLElement {
     const codeInput = shadow.getElementById("signup-code-input");
     const errorMsg = shadow.getElementById("modal-error-msg");
 
+    // Topic Modal elements
+    const topicModal = shadow.getElementById("topic-modal");
+    const topicCloseBtn = shadow.getElementById("topic-modal-close-btn");
+    const topicSubmitBtn = shadow.getElementById("topic-modal-submit-btn");
+    const topicUserDisplay = shadow.getElementById("topic-user-display");
+    const bookSelect = shadow.getElementById("topic-book-select");
+    const contentInput = shadow.getElementById("topic-content-input");
+    const topicErrorMsg = shadow.getElementById("topic-modal-error-msg");
+
     // Check login state
     const updateAuthState = () => {
       const savedUser = localStorage.getItem("readers_user_id");
@@ -112,9 +147,12 @@ class ReadersNav extends HTMLElement {
       }
     };
 
-    // Close Modal
+    // Close Modals
     closeBtn.addEventListener("click", () => {
       loginModal.style.display = "none";
+    });
+    topicCloseBtn.addEventListener("click", () => {
+      topicModal.style.display = "none";
     });
 
     // Toggle Sign-up Code field
@@ -178,7 +216,6 @@ class ReadersNav extends HTMLElement {
         loginModal.style.display = "none";
         updateAuthState();
         
-        // Dispatch custom login event in case other components need to react
         window.dispatchEvent(new CustomEvent("readers-login", { detail: idVal }));
       } catch (err) {
         errorMsg.textContent = err.message || err.toString();
@@ -186,6 +223,116 @@ class ReadersNav extends HTMLElement {
       } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = "확인";
+      }
+    });
+
+    // openTopicModal implementation
+    const openTopicModal = (username) => {
+      topicUserDisplay.textContent = `등록자: ${username} 님`;
+      contentInput.value = "";
+      topicErrorMsg.style.display = "none";
+
+      // Load books options dynamically from books sheet
+      bookSelect.innerHTML = `<option value="">책 목록을 불러오는 중...</option>`;
+      fetch(API_URL + "?action=getBooks")
+        .then(res => res.json())
+        .then(books => {
+          bookSelect.innerHTML = "";
+          if (books.length === 0) {
+            bookSelect.innerHTML = `<option value="자유 선택 도서">자유 선택 도서</option>`;
+          } else {
+            books.forEach(b => {
+              if (b.name) {
+                const opt = document.createElement("option");
+                opt.value = b.name;
+                opt.textContent = b.name;
+                bookSelect.appendChild(opt);
+              }
+            });
+          }
+        })
+        .catch(err => {
+          console.error("Failed to load books for select", err);
+          bookSelect.innerHTML = `<option value="자유 선택 도서">자유 선택 도서</option>`;
+        });
+
+      topicModal.style.display = "flex";
+    };
+
+    // Listen to global open-topic-modal trigger event
+    window.addEventListener("open-topic-modal", () => {
+      const savedUser = localStorage.getItem("readers_user_id");
+      if (!savedUser) {
+        alert("질문을 등록하려면 먼저 로그인이 필요합니다.");
+        // Auto open login modal
+        errorMsg.style.display = "none";
+        idInput.value = "";
+        signupCheck.checked = false;
+        codeField.style.display = "none";
+        codeInput.value = "";
+        loginModal.style.display = "flex";
+      } else {
+        openTopicModal(savedUser);
+      }
+    });
+
+    // Submit Topic Registration
+    topicSubmitBtn.addEventListener("click", async () => {
+      const savedUser = localStorage.getItem("readers_user_id");
+      if (!savedUser) {
+        topicErrorMsg.textContent = "로그인 정보가 유실되었습니다. 다시 로그인해 주세요.";
+        topicErrorMsg.style.display = "block";
+        return;
+      }
+
+      const bookVal = bookSelect.value;
+      const topicVal = contentInput.value.trim();
+      topicErrorMsg.style.display = "none";
+
+      if (!bookVal) {
+        topicErrorMsg.textContent = "도서를 선택해 주세요.";
+        topicErrorMsg.style.display = "block";
+        return;
+      }
+      if (!topicVal) {
+        topicErrorMsg.textContent = "질문 내용을 입력해 주세요.";
+        topicErrorMsg.style.display = "block";
+        return;
+      }
+
+      topicSubmitBtn.disabled = true;
+      topicSubmitBtn.textContent = "등록 중...";
+
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          mode: "cors",
+          headers: {
+            "Content-Type": "text/plain"
+          },
+          body: JSON.stringify({
+            action: "addTopic",
+            id: savedUser,
+            book: bookVal,
+            topic: topicVal
+          })
+        });
+        const result = await res.json();
+        if (!result.success) {
+          throw new Error(result.error || "질문 등록에 실패했습니다.");
+        }
+
+        alert("Topic이 성공적으로 등록되었습니다!");
+        topicModal.style.display = "none";
+        
+        // Notify other components (like ReadersTopics) to refresh list
+        window.dispatchEvent(new CustomEvent("readers-topic-added"));
+      } catch (err) {
+        topicErrorMsg.textContent = err.message || err.toString();
+        topicErrorMsg.style.display = "block";
+      } finally {
+        topicSubmitBtn.disabled = false;
+        topicSubmitBtn.textContent = "등록 완료";
       }
     });
 
@@ -338,6 +485,7 @@ class ReadersArchive extends HTMLElement {
 }
 customElements.define('readers-archive', ReadersArchive);
 
+
 class ReadersTopics extends HTMLElement {
   connectedCallback() {
     const shadow = this.attachShadow({ mode: 'open' });
@@ -476,6 +624,28 @@ class ReadersTopics extends HTMLElement {
       setTimeout(updateCarousel, 50);
     };
 
+    const loadData = () => {
+      fetch(API_URL + "?action=getTopics")
+        .then(res => res.json())
+        .then(data => {
+          data.sort((a, b) => {
+            const dateA = new Date(a.date || a.Data || 0);
+            const dateB = new Date(b.date || b.Data || 0);
+            return dateB - dateA;
+          });
+
+          const hasUpdates = JSON.stringify(data) !== JSON.stringify(topicsData);
+          if (hasUpdates) {
+            topicsData = data;
+            localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+            renderTopics();
+          }
+        })
+        .catch(err => {
+          console.error("Failed to load topics in background", err);
+        });
+    };
+
     const CACHE_KEY = "readers_topics_cache";
     const cached = localStorage.getItem(CACHE_KEY);
     if (cached) {
@@ -487,28 +657,12 @@ class ReadersTopics extends HTMLElement {
       }
     }
 
-    fetch(API_URL + "?action=getTopics")
-      .then(res => res.json())
-      .then(data => {
-        data.sort((a, b) => {
-          const dateA = new Date(a.date || a.Data || 0);
-          const dateB = new Date(b.date || b.Data || 0);
-          return dateB - dateA;
-        });
+    loadData();
 
-        const hasUpdates = JSON.stringify(data) !== JSON.stringify(topicsData);
-        if (hasUpdates) {
-          topicsData = data;
-          localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-          renderTopics();
-        }
-      })
-      .catch(err => {
-        console.error("Failed to load topics", err);
-        if (topicsData.length === 0) {
-          track.innerHTML = `<div style="width: 100%; text-align: center; color: #ff4d4f; font-size: 14px; padding: 40px 0;">질문 목록을 불러오지 못했습니다. 다시 시도해 주세요.</div>`;
-        }
-      });
+    // Listen to custom event when a new topic is added
+    window.addEventListener("readers-topic-added", () => {
+      loadData();
+    });
   }
 }
 customElements.define('readers-topics', ReadersTopics);
