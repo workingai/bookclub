@@ -53,7 +53,7 @@ class ReadersArchive extends HTMLElement {
           width: 100%;
         }
       </style>
-      <div id="archive-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;">
+      <div id="archive-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;align-items:start;">
         <div style="grid-column: span 4; text-align: center; color: oklch(0.5 0.02 60); font-size: 14px; padding: 40px 0;">도서 목록을 불러오는 중입니다...</div>
       </div>
       <div style="text-align:center;margin-top:48px;">
@@ -103,8 +103,8 @@ class ReadersArchive extends HTMLElement {
         item.style.transition = "opacity 0.5s ease, transform 0.5s ease";
         
         item.innerHTML = `
-          <div style="aspect-ratio:3/4.4; border-radius:8px; overflow:hidden; margin-bottom:12px; box-shadow:0 8px 24px rgba(0,0,0,0.06); background:#fcfcfc;">
-            <img src="${book.url || ''}" alt="${book.name || ''}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\' viewBox=\\'0 0 100 100\\'><rect width=\\'100\\' height=\\'100\\' fill=\\'%23efefef\\'/><text x=\\'50%\\' y=\\'50%\\' dominant-baseline=\\'middle\\' text-anchor=\\'middle\\' font-size=\\'12\\' fill=\\'%23999\\'>이미지 없음</text></svg>'">
+          <div style="width:100%; aspect-ratio:3/4.4; border-radius:8px; overflow:hidden; margin-bottom:12px; box-shadow:0 8px 24px rgba(0,0,0,0.06); background:#fcfcfc; position:relative;">
+            <img src="${book.url || ''}" alt="${book.name || ''}" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; display:block;" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\' viewBox=\\'0 0 100 100\\'><rect width=\\'100\\' height=\\'100\\' fill=\\'%23efefef\\'/><text x=\\'50%\\' y=\\'50%\\' dominant-baseline=\\'middle\\' text-anchor=\\'middle\\' font-size=\\'12\\' fill=\\'%23999\\'>이미지 없음</text></svg>'">
           </div>
           <div style="font-size:14px; font-weight:600; margin-bottom:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:'Noto Sans KR',sans-serif;">${book.name || '제목 없음'}</div>
           <div style="font-size:12px; color:oklch(0.5 0.02 60); display:flex; justify-content:space-between; align-items:center; font-family:'Noto Sans KR',sans-serif;">
@@ -132,6 +132,19 @@ class ReadersArchive extends HTMLElement {
       renderArchive();
     });
 
+    // 1. Load from Cache (localStorage) immediately for instant display
+    const CACHE_KEY = "readers_archive_cache";
+    const cachedData = localStorage.getItem(CACHE_KEY);
+    if (cachedData) {
+      try {
+        archiveData = JSON.parse(cachedData);
+        renderArchive();
+      } catch (e) {
+        console.error("Failed to load archive cache", e);
+      }
+    }
+
+    // 2. Fetch from sheet in the background and check if there are any updates
     fetchWithTimeout(API_URL + "?action=getArchive")
       .then(res => {
         if (!res.ok) {
@@ -148,17 +161,26 @@ class ReadersArchive extends HTMLElement {
           const dateB = new Date(b.date || b.data);
           return dateB - dateA;
         });
-        archiveData = data;
-        renderArchive();
+
+        // Only update DOM and cache if the data is actually different (new items added/edited)
+        const hasUpdates = JSON.stringify(data) !== JSON.stringify(archiveData);
+        if (hasUpdates) {
+          archiveData = data;
+          localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+          renderArchive();
+        }
       })
       .catch(err => {
-        console.error("Failed to load archive", err);
-        grid.innerHTML = `
-          <div style="grid-column: span 4; text-align: center; color: #ff4d4f; font-size: 14px; padding: 40px 0; font-family:'Noto Sans KR',sans-serif;">
-            목록을 불러오지 못했습니다.<br>
-            <span style="font-size:12px; color:oklch(0.5 0.02 60); display:inline-block; margin-top:8px;">상세 오류: ${err.message || err.toString()}</span>
-          </div>
-        `;
+        console.error("Background sync failed", err);
+        // If there is no cache loaded, show the error message to the user
+        if (archiveData.length === 0) {
+          grid.innerHTML = `
+            <div style="grid-column: span 4; text-align: center; color: #ff4d4f; font-size: 14px; padding: 40px 0; font-family:'Noto Sans KR',sans-serif;">
+              목록을 불러오지 못했습니다.<br>
+              <span style="font-size:12px; color:oklch(0.5 0.02 60); display:inline-block; margin-top:8px;">상세 오류: ${err.message || err.toString()}</span>
+            </div>
+          `;
+        }
       });
   }
 }
