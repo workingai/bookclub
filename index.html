@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+<script src="./navigation.js" defer></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;600;700&family=Fredoka:wght@500;600;700&family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:oklch(0.98 0.008 80);}
+  a{color:#2A6B52;text-decoration:none;}
+  a:hover{color:#1E4D3B;}
+  ::selection{background:#D0E2DB;}
+
+  /* 3D Book Cover Effect */
+  .book-container {
+    perspective: 1200px;
+    width: 280px;
+    aspect-ratio: 3 / 4.4;
+  }
+  .book-cover {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transform: rotateY(-12deg) rotateX(4deg) rotateZ(-1deg);
+    transition: transform 0.5s cubic-bezier(0.165, 0.84, 0.44, 1), box-shadow 0.5s ease;
+    box-shadow: -12px 18px 36px -12px rgba(42, 107, 82, 0.25), -2px 0 5px rgba(0,0,0,0.05);
+    border-radius: 4px 12px 12px 4px;
+    overflow: hidden;
+    background: #fff;
+    border-left: 3px solid rgba(0,0,0,0.08);
+  }
+  .book-container:hover .book-cover {
+    transform: rotateY(-3deg) rotateX(1deg) rotateZ(0deg) translateY(-10px);
+    box-shadow: -20px 30px 50px -15px rgba(42, 107, 82, 0.35), -5px 0 10px rgba(0,0,0,0.08);
+  }
+</style>
+</helmet>
+
+<div style="font-family:'Noto Sans KR',sans-serif;color:oklch(0.22 0.02 60);width:100%;overflow-x:hidden;">
+
+  <!-- NAV -->
+  <readers-nav></readers-nav>
+
+  <!-- HERO -->
+  <div style="position:relative;height:540px;overflow:hidden;display:flex;align-items:center;background:oklch(0.2 0.05 40);color:white;border-radius:20px;max-width:1200px;margin:24px auto;width:calc(100% - 48px);box-shadow:0 24px 50px -12px oklch(0.1 0.05 40 / 0.3);">
+    <img src="./library_key_visual.png" alt="Library Key Visual" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.5) contrast(1.05);z-index:1;">
+    <div style="position:absolute;inset:0;background:linear-gradient(90deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.15) 100%);z-index:2;"></div>
+    
+    <div style="position:relative;z-index:3;display:grid;grid-template-columns:1.2fr 0.8fr;width:100%;padding:0 80px;gap:48px;align-items:center;box-sizing:border-box;">
+      <!-- Left: Slogan & CTAs -->
+      <div>
+        <div style="font-size:13px;letter-spacing:0.15em;font-weight:600;color:oklch(0.85 0.06 60);text-transform:uppercase;margin-bottom:18px;">매달 한 권, 함께 읽고 이야기해요</div>
+        <h1 style="font-family:'Noto Serif KR',serif;font-size:46px;font-weight:700;line-height:1.3;margin:0 0 24px;letter-spacing:-0.02em;">역사를 좋아하는 사람들이<br>한 달에 한 번 모입니다</h1>
+        <p style="font-size:16px;line-height:1.7;color:rgba(255,255,255,0.75);margin:0 0 36px;max-width:520px;">가볍게 읽고, 편하게 이야기 나누는 독서 모임입니다.<br>이번 달 책과 모임 소식을 확인해보세요.</p>
+        <div style="display:flex;gap:14px;">
+          <a href="#notice" style="background:oklch(0.85 0.06 60);color:oklch(0.2 0.02 20);padding:14px 28px;border-radius:8px;font-weight:600;font-size:15px;transition:all 0.2s ease;">이번 모임 안내</a>
+          <a href="#apply" style="border:1.5px solid rgba(255,255,255,0.4);color:white;padding:14px 28px;border-radius:8px;font-weight:600;font-size:15px;transition:all 0.2s ease;backdrop-filter:blur(4px);">Topic 등록하기</a>
+        </div>
+      </div>
+
+      <!-- Right: Glassmorphic Quick Notice Card -->
+      <div style="background:rgba(255,255,255,0.08);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.15);border-radius:16px;padding:32px;box-sizing:border-box;box-shadow:0 20px 40px rgba(0,0,0,0.35);">
+        <div style="font-size:12px;font-weight:700;color:oklch(0.85 0.06 60);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:20px;display:flex;align-items:center;gap:6px;">
+          <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:oklch(0.85 0.06 60);"></span> QUICK NOTICE
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:4px;">모임 일시</div>
+            <div style="font-size:16px;font-weight:600;color:white;">8월 17일 (월) 오후 2시 – 5시</div>
+          </div>
+          <div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:4px;">모임 장소</div>
+            <div style="font-size:16px;font-weight:600;color:white;">강남역 인근 커뮤니티룸</div>
+          </div>
+          <div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:4px;">모임 주제</div>
+            <div style="font-size:16px;font-weight:600;color:white;">자유 선택 도서 (자유 주제)</div>
+          </div>
+        </div>
+        <hr style="border:0;border-top:1px solid rgba(255,255,255,0.1);margin:24px 0;">
+        <a href="#notice" style="display:block;text-align:center;background:rgba(255,255,255,0.1);color:white;padding:12px;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;transition:background 0.2s ease;">상세 정보 확인 →</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTICE -->
+  <div id="notice" style="max-width:1200px;margin:0 auto;padding:90px 24px;box-sizing:border-box;">
+    <div style="font-size:13px;font-weight:700;letter-spacing:0.1em;color:#2A6B52;text-transform:uppercase;margin-bottom:12px;">이달의 공지</div>
+    <div style="font-family:'Noto Serif KR',serif;font-size:34px;font-weight:700;margin-bottom:36px;">8월 모임 안내</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:oklch(0.9 0.01 60);border:1px solid oklch(0.9 0.01 60);border-radius:14px;overflow:hidden;">
+      <div style="background:oklch(0.98 0.008 80);padding:32px;">
+        <div style="font-size:13px;color:oklch(0.5 0.02 60);margin-bottom:8px;">날짜</div>
+        <div style="font-size:19px;font-weight:600;">8월 17일 (월)</div>
+      </div>
+      <div style="background:oklch(0.98 0.008 80);padding:32px;">
+        <div style="font-size:13px;color:oklch(0.5 0.02 60);margin-bottom:8px;">시간</div>
+        <div style="font-size:19px;font-weight:600;">오후 2:00 – 5:00</div>
+      </div>
+      <div style="background:oklch(0.98 0.008 80);padding:32px;">
+        <div style="font-size:13px;color:oklch(0.5 0.02 60);margin-bottom:8px;">장소</div>
+        <div style="font-size:19px;font-weight:600;">강남역 인근 커뮤니티룸 (신청 후 개별 안내)</div>
+      </div>
+    </div>
+    <div style="margin-top:24px;padding:20px 24px;background:#E8F0ED;border-radius:10px;font-size:15px;line-height:1.7;color:#1E4D3B;">
+      📌 이번 달은 책을 절반만 읽고 오셔도 괜찮아요. 처음 오시는 분도 편하게 참여하실 수 있습니다.
+    </div>
+  </div>
+
+  <!-- BOOK OF THE MONTH -->
+  <div id="book" style="background:oklch(0.96 0.015 70);padding:90px 0;">
+    <div style="max-width:1200px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:280px 1fr;gap:56px;align-items:start;box-sizing:border-box;">
+      <div class="book-container">
+        <div class="book-cover">
+          <img src="./free_theme_illustration.png" alt="Free Theme Line Art Illustration" style="width:100%;height:100%;object-fit:cover;">
+        </div>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:700;letter-spacing:0.1em;color:#2A6B52;text-transform:uppercase;margin-bottom:12px;">이번 달의 주제</div>
+        <div style="font-family:'Noto Serif KR',serif;font-size:34px;font-weight:700;margin-bottom:6px;">자유 선택 도서</div>
+        <div style="font-size:15px;color:oklch(0.45 0.02 60);margin-bottom:24px;">각자 원하는 책을 골라서 읽고 공유해요</div>
+        <div style="font-size:16px;line-height:1.9;color:oklch(0.32 0.02 60);max-width:560px;">
+          이번 달은 지정 도서 없이 각자 읽고 싶었던 책을 자유롭게 골라 읽고 이야기 나누는 시간입니다. 평소 읽고 싶었던 역사 소설, 인문서, 사회과학 서적 등 어떤 장르든 좋습니다. 서로의 취향이 담긴 다양한 책들을 소개하고, 각자의 책에서 발견한 다채로운 이야기들을 함께 나누어 보아요.
+        </div>
+        <div style="display:flex;gap:10px;margin-top:24px;">
+          <span style="font-size:13px;padding:6px 14px;border-radius:100px;background:oklch(0.98 0.008 80);border:1px solid oklch(0.85 0.01 60);color:oklch(0.4 0.02 60);">자유 주제</span>
+          <span style="font-size:13px;padding:6px 14px;border-radius:100px;background:oklch(0.98 0.008 80);border:1px solid oklch(0.85 0.01 60);color:oklch(0.4 0.02 60);">개인 도서</span>
+          <span style="font-size:13px;padding:6px 14px;border-radius:100px;background:oklch(0.98 0.008 80);border:1px solid oklch(0.85 0.01 60);color:oklch(0.4 0.02 60);">취향 공유</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DISCUSSION -->
+  <div id="discussion" style="max-width:1200px;margin:0 auto;padding:90px 24px;box-sizing:border-box;">
+    <div style="font-size:13px;font-weight:700;letter-spacing:0.1em;color:#2A6B52;text-transform:uppercase;margin-bottom:12px;">이번 달 주제</div>
+    <div style="font-family:'Noto Serif KR',serif;font-size:34px;font-weight:700;margin-bottom:16px;">함께 이야기 나눌 질문들</div>
+    <div style="font-size:16px;line-height:1.8;color:oklch(0.4 0.02 60);margin-bottom:36px;max-width:620px;">아래 질문들은 미리 생각해오시면 좋지만, 답을 준비해오지 않으셔도 괜찮습니다. 대화 중에 자연스럽게 떠오르는 이야기도 환영해요.</div>
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div style="display:flex;gap:16px;padding:24px;background:oklch(0.98 0.008 80);border:1px solid oklch(0.9 0.01 60);border-radius:12px;">
+        <div style="font-family:'Noto Serif KR',serif;font-size:20px;font-weight:700;color:#2A6B52;">01</div>
+        <div style="font-size:16px;line-height:1.7;">'인지혁명'이 없었다면 인류는 지금과 얼마나 다른 모습이었을까요?</div>
+      </div>
+      <div style="display:flex;gap:16px;padding:24px;background:oklch(0.98 0.008 80);border:1px solid oklch(0.9 0.01 60);border-radius:12px;">
+        <div style="font-family:'Noto Serif KR',serif;font-size:20px;font-weight:700;color:#2A6B52;">02</div>
+        <div style="font-size:16px;line-height:1.7;">저자는 농업혁명을 '역사상 최대의 사기'라고 표현합니다. 여러분은 동의하시나요?</div>
+      </div>
+      <div style="display:flex;gap:16px;padding:24px;background:oklch(0.98 0.008 80);border:1px solid oklch(0.9 0.01 60);border-radius:12px;">
+        <div style="font-family:'Noto Serif KR',serif;font-size:20px;font-weight:700;color:#2A6B52;">03</div>
+        <div style="font-size:16px;line-height:1.7;">책에서 가장 인상 깊었던 문장이나 사건을 하나씩 나눠볼까요?</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="apply" style="background:#2A6B52;padding:90px 0;">
+    <div style="max-width:1200px;margin:0 auto;padding:0 24px;box-sizing:border-box;text-align:center;">
+      <div style="max-width:640px;margin:0 auto;">
+        <div style="font-family:'Noto Serif KR',serif;font-size:32px;font-weight:700;color:oklch(0.98 0.01 60);margin-bottom:14px;">이번 달 모임, 함께해요</div>
+        <div style="font-size:16px;line-height:1.8;color:oklch(0.9 0.02 60);margin-bottom:32px;">아래 버튼으로 신청서를 남겨주시면 자세한 안내를 드릴게요. 처음이신 분도 언제든 환영합니다.</div>
+        <a href="#" style="display:inline-block;background:oklch(0.98 0.01 60);color:#2A6B52;padding:16px 36px;border-radius:8px;font-weight:700;font-size:16px;">Topic 등록하기 →</a>
+        <div style="font-size:13px;color:oklch(0.85 0.02 60);margin-top:16px;">신청 마감: 8월 13일 (목)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REVIEWS -->
+  <div style="max-width:1200px;margin:0 auto;padding:90px 24px;box-sizing:border-box;">
+    <div style="font-size:13px;font-weight:700;letter-spacing:0.1em;color:#2A6B52;text-transform:uppercase;margin-bottom:12px;">멤버 독후감</div>
+    <div style="font-family:'Noto Serif KR',serif;font-size:34px;font-weight:700;margin-bottom:36px;">이렇게 읽었어요</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;">
+      <div style="padding:24px;border:1px solid oklch(0.9 0.01 60);border-radius:12px;">
+        <div style="font-size:15px;line-height:1.7;color:oklch(0.35 0.02 60);margin-bottom:16px;">"역사를 이렇게 큰 그림으로 본 적이 없었는데, 다음 모임이 벌써 기다려져요."</div>
+        <div style="font-size:13px;color:oklch(0.5 0.02 60);font-weight:600;">— 지현</div>
+      </div>
+      <div style="padding:24px;border:1px solid oklch(0.9 0.01 60);border-radius:12px;">
+        <div style="font-size:15px;line-height:1.7;color:oklch(0.35 0.02 60);margin-bottom:16px;">"혼자 읽었으면 놓쳤을 부분들을 함께 이야기하면서 다시 발견했어요."</div>
+        <div style="font-size:13px;color:oklch(0.5 0.02 60);font-weight:600;">— 민준</div>
+      </div>
+      <div style="padding:24px;border:1px solid oklch(0.9 0.01 60);border-radius:12px;">
+        <div style="font-size:15px;line-height:1.7;color:oklch(0.35 0.02 60);margin-bottom:16px;">"친목 모임인 줄만 알았는데 토론이 은근히 깊어서 좋았습니다."</div>
+        <div style="font-size:13px;color:oklch(0.5 0.02 60);font-weight:600;">— 서연</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ARCHIVE -->
+  <div id="archive" style="background:oklch(0.96 0.015 70);padding:90px 0;">
+    <div style="max-width:1200px;margin:0 auto;padding:0 24px;box-sizing:border-box;">
+      <div style="font-size:13px;font-weight:700;letter-spacing:0.1em;color:#2A6B52;text-transform:uppercase;margin-bottom:12px;">지난 모임</div>
+      <div style="font-family:'Noto Serif KR',serif;font-size:34px;font-weight:700;margin-bottom:36px;">우리가 함께 읽어온 책들</div>
+      
+      <div id="archive-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;">
+        <!-- Loaded dynamically -->
+      </div>
+
+      <div style="text-align:center;margin-top:48px;">
+        <button id="more-archive-btn" style="display:none;background:none;border:none;color:#2A6B52;font-size:15px;font-weight:700;cursor:pointer;padding:12px 28px;transition:all 0.2s ease;font-family:'Fredoka',sans-serif;letter-spacing:0.05em;border:2px solid #2A6B52;border-radius:30px;">more →</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      const API_URL = "https://script.google.com/macros/s/AKfycbzYkkbDw6IFe926bTiSu7qYIeqTFeH3m8nxScZJF454rc_BLxB0SVUYdMKsWd8g1qdjVQ/exec";
+      let archiveData = [];
+      let visibleCount = 4;
+
+      const grid = document.getElementById("archive-grid");
+      const btn = document.getElementById("more-archive-btn");
+
+      // Hover style for button
+      btn.addEventListener("mouseenter", () => {
+        btn.style.background = "#2A6B52";
+        btn.style.color = "#fff";
+      });
+      btn.addEventListener("mouseleave", () => {
+        btn.style.background = "none";
+        btn.style.color = "#2A6B52";
+      });
+
+      async function fetchArchive() {
+        grid.innerHTML = `<div style="grid-column: span 4; text-align: center; color: oklch(0.5 0.02 60); font-size: 14px; padding: 40px 0;">도서 목록을 불러오는 중입니다...</div>`;
+        try {
+          const res = await fetch(API_URL + "?action=getArchive");
+          const data = await res.json();
+          
+          // Sort by date (newest first)
+          data.sort((a, b) => {
+            const dateA = new Date(a.date || a.data);
+            const dateB = new Date(b.date || b.data);
+            return dateB - dateA;
+          });
+
+          archiveData = data;
+          renderArchive();
+        } catch (err) {
+          console.error("Failed to load archive", err);
+          grid.innerHTML = `<div style="grid-column: span 4; text-align: center; color: #ff4d4f; font-size: 14px; padding: 40px 0;">목록을 불러오지 못했습니다. 다시 시도해 주세요.</div>`;
+        }
+      }
+
+      function renderArchive() {
+        grid.innerHTML = "";
+        
+        const slice = archiveData.slice(0, visibleCount);
+        slice.forEach(book => {
+          const dateVal = book.date || book.data;
+          const dObj = new Date(dateVal);
+          let monthString = "";
+          if (dObj && !isNaN(dObj)) {
+            monthString = `${dObj.getMonth() + 1}월 모임`;
+          } else {
+            monthString = dateVal || "";
+          }
+
+          const item = document.createElement("div");
+          item.style.opacity = "0";
+          item.style.transform = "translateY(15px)";
+          item.style.transition = "opacity 0.5s ease, transform 0.5s ease";
+          
+          item.innerHTML = `
+            <div style="aspect-ratio:3/4.4; border-radius:8px; overflow:hidden; margin-bottom:12px; box-shadow:0 8px 24px rgba(0,0,0,0.06); background:#fcfcfc;">
+              <img src="${book.url || ''}" alt="${book.name || ''}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\' viewBox=\\'0 0 100 100\\'><rect width=\\'100\\' height=\\'100\\' fill=\\'%23efefef\\'/><text x=\\'50%\\' y=\\'50%\\' dominant-baseline=\\'middle\\' text-anchor=\\'middle\\' font-size=\\'12\\' fill=\\'%23999\\'>이미지 없음</text></svg>'">
+            </div>
+            <div style="font-size:14px; font-weight:600; margin-bottom:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${book.name || '제목 없음'}</div>
+            <div style="font-size:12px; color:oklch(0.5 0.02 60); display:flex; justify-content:space-between; align-items:center;">
+              <span>${monthString}</span>
+              <span style="font-size:11px; opacity:0.8;">${book.author || ''}</span>
+            </div>
+          `;
+          
+          grid.appendChild(item);
+          
+          setTimeout(() => {
+            item.style.opacity = "1";
+            item.style.transform = "translateY(0)";
+          }, 30);
+        });
+
+        if (visibleCount < archiveData.length) {
+          btn.style.display = "inline-block";
+        } else {
+          btn.style.display = "none";
+        }
+      }
+
+      fetchArchive();
+    })();
+  </script>
+
+  <!-- FOOTER -->
+  <div style="max-width:1200px;margin:0 auto;padding:48px 24px;box-sizing:border-box;text-align:center;">
+    <div style="font-family:'Noto Serif KR',serif;font-weight:700;font-size:18px;margin-bottom:8px;">Reader's Club</div>
+    <div style="font-size:13px;color:oklch(0.5 0.02 60);">매달 한 권, 함께 읽고 이야기 나누는 모임</div>
+  </div>
+
+</div>
+
+</x-dc>
+</body>
+</html>
