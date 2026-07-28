@@ -1,3 +1,4 @@
+(() => {
 const API_URL = "https://script.google.com/macros/s/AKfycbxqJukWhIxtRm-XmZLZUNdfQLu0vfL6QnAwG_K4uCubRVqrWC-9dOpNAMYuvxJEUy44Kg/exec";
 
 class ReadersNav extends HTMLElement {
@@ -1060,3 +1061,4 @@ class ReadersTopics extends HTMLElement {
   }
 }
 customElements.define('readers-topics', ReadersTopics);
+})();

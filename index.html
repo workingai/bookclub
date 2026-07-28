@@ -322,7 +322,7 @@
     }
   };
 
-  const loadLatestMeeting = () => {
+  const loadLatestMeeting = (force = false) => {
     // 1. Render from Cache immediately if available
     const cached = localStorage.getItem(CACHE_KEY);
     let cachedObj = null;
@@ -330,19 +330,23 @@
       try {
         cachedObj = JSON.parse(cached);
         renderMeeting(cachedObj);
+        // Unless forced (e.g. after adding a meeting or Ctrl+F5), do not fetch again
+        if (!force) {
+          return;
+        }
       } catch (e) {
         console.error("Failed to parse cached meeting", e);
       }
     }
 
-    // 2. Fetch fresh data in the background
+    // 2. Fetch fresh data
     fetch(API_URL + "?action=getMeetings")
       .then(res => res.json())
       .then(data => {
         if (data && data.length > 0) {
           const latest = data[data.length - 1];
           const hasUpdates = JSON.stringify(latest) !== JSON.stringify(cachedObj);
-          if (hasUpdates) {
+          if (hasUpdates || force) {
             localStorage.setItem(CACHE_KEY, JSON.stringify(latest));
             renderMeeting(latest);
           }
@@ -354,11 +358,11 @@
   };
 
   // Initial Load
-  loadLatestMeeting();
+  loadLatestMeeting(false);
   
   // Reload immediately when admin registers a new meeting
   window.addEventListener("readers-meeting-added", () => {
-    loadLatestMeeting();
+    loadLatestMeeting(true);
   });
 })();
 </script>
