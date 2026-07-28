@@ -15,7 +15,7 @@ class ReadersNav extends HTMLElement {
           <div style="display:flex;align-items:center;gap:32px;font-size:14px;font-weight:500;color:oklch(0.4 0.02 60);">
             <a href="${prefix}#notice" style="color:#2A6B52;text-decoration:none;">공지</a>
             <a href="${prefix}#book" style="color:#2A6B52;text-decoration:none;">이번달 책</a>
-            <a href="${prefix}#apply" style="color:#2A6B52;text-decoration:none;">Topic 등록</a>
+            <a href="${prefix}#discussion" style="color:#2A6B52;text-decoration:none;">Topic 등록</a>
             <a href="${prefix}#archive" style="color:#2A6B52;text-decoration:none;">지난 모임</a>
             
             <!-- Login State Container -->
@@ -761,8 +761,8 @@ class ReadersArchive extends HTMLElement {
         item.style.transition = "opacity 0.5s ease, transform 0.5s ease";
         
         item.innerHTML = `
-          <div style="width:100%; height:280px; border-radius:8px; overflow:hidden; margin-bottom:12px; box-shadow:0 8px 24px rgba(0,0,0,0.06); background:#fcfcfc;">
-            <img src="${book.url || ''}" alt="${book.name || ''}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\' viewBox=\\'0 0 100 100\\'><rect width=\\'100\\' height=\\'100\\' fill=\\'%23efefef\\'/><text x=\\'50%\\' y=\\'50%\\' dominant-baseline=\\'middle\\' text-anchor=\\'middle\\' font-size=\\'12\\' fill=\\'%23999\\'>이미지 없음</text></svg>'">
+          <div style="width:100%; height:280px; border-radius:8px; overflow:hidden; margin-bottom:12px; box-shadow:0 8px 24px rgba(0,0,0,0.06); background:#fff; display:flex; align-items:center; justify-content:center; padding:12px; box-sizing:border-box;">
+            <img src="${book.url || ''}" alt="${book.name || ''}" style="max-width:100%; max-height:100%; object-fit:contain; display:block;" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\' viewBox=\\'0 0 100 100\\'><rect width=\\'100\\' height=\\'100\\' fill=\\'%23efefef\\'/><text x=\\'50%\\' y=\\'50%\\' dominant-baseline=\\'middle\\' text-anchor=\\'middle\\' font-size=\\'12\\' fill=\\'%23999\\'>이미지 없음</text></svg>'">
           </div>
           <div style="font-size:14px; font-weight:600; margin-bottom:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:'Noto Sans KR',sans-serif;">${book.name || '제목 없음'}</div>
           <div style="font-size:12px; color:oklch(0.5 0.02 60); display:flex; justify-content:space-between; align-items:center; font-family:'Noto Sans KR',sans-serif;">
