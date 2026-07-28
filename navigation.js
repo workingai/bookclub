@@ -60,12 +60,15 @@ class ReadersNav extends HTMLElement {
           <h3 style="margin:0 0 4px; font-size:18px; font-weight:700; color:#2A6B52;">Topic 등록하기</h3>
           <div id="topic-user-display" style="font-size:13px; color:#666; margin-bottom:24px; font-weight:500;">등록자: 님</div>
           
-          <div style="margin-bottom:20px;">
-            <label style="display:block; font-size:13px; color:#444; margin-bottom:8px; font-weight:600;">어떤 책에 대한 토픽인가요?</label>
-            <select id="topic-book-select" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px; outline:none; font-family:inherit; background: white; cursor: pointer;">
-              <!-- Loaded dynamically -->
-            </select>
-          </div>
+           <div style="margin-bottom:20px;">
+             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+               <label style="font-size:13px; color:#444; font-weight:600; margin:0;">어떤 책에 대한 토픽인가요?</label>
+               <button id="topic-to-book-btn" style="background:#E8F0ED; color:#2A6B52; border:none; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:700; cursor:pointer; font-family:inherit; transition:background 0.2s ease;">책추천</button>
+             </div>
+             <select id="topic-book-select" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px; outline:none; font-family:inherit; background: white; cursor: pointer;">
+               <!-- Loaded dynamically -->
+             </select>
+           </div>
           
           <div style="margin-bottom:24px;">
             <label style="display:block; font-size:13px; color:#444; margin-bottom:8px; font-weight:600;">이 책에 대해 함께 이야기하고 싶은 질문은 무엇인가요?</label>
@@ -339,35 +342,82 @@ class ReadersNav extends HTMLElement {
       }
     });
 
+    // Prefetch book list on page load
+    let cachedBooks = [];
+    const prefetchBooks = () => {
+      fetch(API_URL + "?action=getBooks")
+        .then(res => res.json())
+        .then(books => {
+          cachedBooks = books;
+        })
+        .catch(err => {
+          console.error("Failed to prefetch books list", err);
+        });
+    };
+    prefetchBooks();
+
+    // Re-prefetch when a book is added
+    window.addEventListener("readers-book-added", () => {
+      prefetchBooks();
+    });
+
+    // Handle "책추천" transition button
+    const topicToBookBtn = shadow.getElementById("topic-to-book-btn");
+    topicToBookBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      topicModal.style.display = "none";
+      window.dispatchEvent(new CustomEvent("open-book-modal"));
+    });
+
     // openTopicModal implementation
     const openTopicModal = (username) => {
       topicUserDisplay.textContent = `등록자: ${username} 님`;
       contentInput.value = "";
       topicErrorMsg.style.display = "none";
 
-      // Load books options dynamically from books sheet
-      bookSelect.innerHTML = `<option value="">책 목록을 불러오는 중...</option>`;
-      fetch(API_URL + "?action=getBooks")
-        .then(res => res.json())
-        .then(books => {
-          bookSelect.innerHTML = "";
-          if (books.length === 0) {
-            bookSelect.innerHTML = `<option value="자유 선택 도서">자유 선택 도서</option>`;
-          } else {
-            books.forEach(b => {
-              if (b.name) {
-                const opt = document.createElement("option");
-                opt.value = b.name;
-                opt.textContent = b.name;
-                bookSelect.appendChild(opt);
-              }
-            });
+      // Set default placeholder option
+      bookSelect.innerHTML = `<option value="" disabled selected>책을 선택해 주세요</option>`;
+      
+      if (cachedBooks && cachedBooks.length > 0) {
+        cachedBooks.forEach(b => {
+          if (b.name) {
+            const opt = document.createElement("option");
+            opt.value = b.name;
+            opt.textContent = b.name;
+            bookSelect.appendChild(opt);
           }
-        })
-        .catch(err => {
-          console.error("Failed to load books for select", err);
-          bookSelect.innerHTML = `<option value="자유 선택 도서">자유 선택 도서</option>`;
         });
+      } else {
+        // Fetch on-demand if cache is empty
+        fetch(API_URL + "?action=getBooks")
+          .then(res => res.json())
+          .then(books => {
+            cachedBooks = books;
+            bookSelect.innerHTML = `<option value="" disabled selected>책을 선택해 주세요</option>`;
+            if (books.length === 0) {
+              const opt = document.createElement("option");
+              opt.value = "자유 선택 도서";
+              opt.textContent = "자유 선택 도서";
+              bookSelect.appendChild(opt);
+            } else {
+              books.forEach(b => {
+                if (b.name) {
+                  const opt = document.createElement("option");
+                  opt.value = b.name;
+                  opt.textContent = b.name;
+                  bookSelect.appendChild(opt);
+                }
+              });
+            }
+          })
+          .catch(err => {
+            console.error("Failed to load books for select on-demand", err);
+            const opt = document.createElement("option");
+            opt.value = "자유 선택 도서";
+            opt.textContent = "자유 선택 도서";
+            bookSelect.appendChild(opt);
+          });
+      }
 
       topicModal.style.display = "flex";
     };
@@ -878,9 +928,47 @@ class ReadersTopics extends HTMLElement {
     `;
 
     let topicsData = [];
+    let rollInterval = null;
     const container = shadow.getElementById("topics-container");
 
+    const startRolling = () => {
+      if (rollInterval) clearInterval(rollInterval);
+      if (topicsData.length <= 5) {
+        container.style.maxHeight = "";
+        container.style.overflow = "";
+        return;
+      }
+
+      rollInterval = setInterval(() => {
+        const firstChild = container.querySelector(".topic-item");
+        if (!firstChild) return;
+
+        // Slide up smoothly
+        firstChild.style.transition = "margin-top 0.8s ease, opacity 0.8s ease";
+        firstChild.style.marginTop = `-${firstChild.offsetHeight + 16}px`; // 16px is gap
+        firstChild.style.opacity = "0";
+
+        setTimeout(() => {
+          // Reset styles
+          firstChild.style.transition = "";
+          firstChild.style.marginTop = "";
+          firstChild.style.opacity = "";
+          // Move to the end of the list
+          container.appendChild(firstChild);
+        }, 800);
+      }, 3500); // Shift every 3.5 seconds
+    };
+
+    // Pause on hover, resume on mouse leave
+    container.addEventListener("mouseenter", () => {
+      if (rollInterval) clearInterval(rollInterval);
+    });
+    container.addEventListener("mouseleave", () => {
+      startRolling();
+    });
+
     const renderTopics = () => {
+      if (rollInterval) clearInterval(rollInterval);
       container.innerHTML = "";
       if (topicsData.length === 0) {
         container.innerHTML = `<div style="text-align: center; color: oklch(0.5 0.02 60); font-size: 14px; padding: 40px 0;">등록된 질문이 없습니다. 첫 질문을 등록해 보세요!</div>`;
@@ -903,6 +991,25 @@ class ReadersTopics extends HTMLElement {
         `;
         container.appendChild(row);
       });
+
+      // Show exactly 5 items, hide and roll the rest
+      if (topicsData.length > 5) {
+        setTimeout(() => {
+          const items = container.querySelectorAll(".topic-item");
+          if (items.length > 5) {
+            let totalHeight = 0;
+            for (let i = 0; i < 5; i++) {
+              totalHeight += items[i].offsetHeight + 16; // height + gap
+            }
+            container.style.maxHeight = `${totalHeight - 16}px`;
+            container.style.overflow = "hidden";
+            startRolling();
+          }
+        }, 150);
+      } else {
+        container.style.maxHeight = "";
+        container.style.overflow = "";
+      }
     };
 
     const loadData = () => {
