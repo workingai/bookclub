@@ -73,11 +73,11 @@
         <div style="display:flex;flex-direction:column;gap:16px;">
           <div>
             <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:4px;">모임 일시</div>
-            <div style="font-size:16px;font-weight:600;color:white;">8월 17일 (월) 오후 2시 – 5시</div>
+            <div id="hero-meeting-time" style="font-size:16px;font-weight:600;color:white;">로딩 중...</div>
           </div>
           <div>
             <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:4px;">모임 장소</div>
-            <div style="font-size:16px;font-weight:600;color:white;">강남역 인근 커뮤니티룸</div>
+            <div id="hero-meeting-place" style="font-size:16px;font-weight:600;color:white;">로딩 중...</div>
           </div>
           <div>
             <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:4px;">모임 주제</div>
@@ -97,19 +97,22 @@
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:oklch(0.9 0.01 60);border:1px solid oklch(0.9 0.01 60);border-radius:12px;overflow:hidden;">
       <div style="background:oklch(0.98 0.008 80);padding:20px 24px;">
         <div style="font-size:12px;color:oklch(0.5 0.02 60);margin-bottom:6px;">날짜</div>
-        <div style="font-size:17px;font-weight:600;">8월 17일 (월)</div>
+        <div id="notice-date" style="font-size:17px;font-weight:600;">로딩 중...</div>
       </div>
       <div style="background:oklch(0.98 0.008 80);padding:20px 24px;">
         <div style="font-size:12px;color:oklch(0.5 0.02 60);margin-bottom:6px;">시간</div>
-        <div style="font-size:17px;font-weight:600;">오후 2:00 – 5:00</div>
+        <div id="notice-time" style="font-size:17px;font-weight:600;">로딩 중...</div>
       </div>
       <div style="background:oklch(0.98 0.008 80);padding:20px 24px;">
         <div style="font-size:12px;color:oklch(0.5 0.02 60);margin-bottom:6px;">장소</div>
-        <div style="font-size:17px;font-weight:600;">강남역 인근 커뮤니티룸</div>
+        <div style="font-size:17px;font-weight:600;display:flex;align-items:center;gap:8px;">
+          <span id="notice-place">로딩 중...</span>
+          <span id="notice-map-icon"></span>
+        </div>
       </div>
     </div>
-    <div style="margin-top:16px;padding:16px 20px;background:#E8F0ED;border-radius:8px;font-size:14px;line-height:1.6;color:#1E4D3B;">
-      📌 이번 달은 책을 절반만 읽고 오셔도 괜찮아요. 처음 오시는 분도 편하게 참여하실 수 있습니다.
+    <div id="notice-memo" style="margin-top:16px;padding:16px 20px;background:#E8F0ED;border-radius:8px;font-size:14px;line-height:1.6;color:#1E4D3B;">
+      로딩 중...
     </div>
   </div>
 
@@ -208,12 +211,88 @@
 </div>
 
 <script>
+  // Click Event Delegation
   document.addEventListener('click', function(e) {
     const target = e.target.closest('a');
-    if (target && target.textContent.includes('Topic 등록하기')) {
-      e.preventDefault();
-      window.dispatchEvent(new CustomEvent('open-topic-modal'));
+    if (target) {
+      if (target.textContent.includes('Topic 등록하기')) {
+        e.preventDefault();
+        window.dispatchEvent(new CustomEvent('open-topic-modal'));
+      } else if (target.textContent.trim() === 'admin') {
+        e.preventDefault();
+        window.dispatchEvent(new CustomEvent('open-admin-modal'));
+      }
     }
+  });
+
+  // Dynamic Meeting Info Loading from Google Sheets (meeting)
+  const API_URL = "https://script.google.com/macros/s/AKfycbxqJukWhIxtRm-XmZLZUNdfQLu0vfL6QnAwG_K4uCubRVqrWC-9dOpNAMYuvxJEUy44Kg/exec";
+
+  const loadLatestMeeting = () => {
+    fetch(API_URL + "?action=getMeetings")
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.length > 0) {
+          // Get the latest meeting record
+          const latest = data[data.length - 1];
+
+          // Format Date (yyyy-MM-dd -> 8월 14일 (금))
+          let displayDate = latest.date || '';
+          if (latest.date && latest.date.includes('-')) {
+            const parts = latest.date.split('-');
+            if (parts.length === 3) {
+              const dObj = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+              const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+              displayDate = `${Number(parts[1])}월 ${Number(parts[2])}일 (${weekdays[dObj.getDay()]})`;
+            }
+          }
+
+          // Update Hero Card Quick Notice
+          const heroTime = document.getElementById("hero-meeting-time");
+          const heroPlace = document.getElementById("hero-meeting-place");
+          if (heroTime) heroTime.textContent = `${displayDate} ${latest.time || ''}`;
+          if (heroPlace) heroPlace.textContent = latest.place || '';
+
+          // Update Notice Section
+          const noticeDate = document.getElementById("notice-date");
+          const noticeTime = document.getElementById("notice-time");
+          const noticePlace = document.getElementById("notice-place");
+          const noticeMapIcon = document.getElementById("notice-map-icon");
+          const noticeMemo = document.getElementById("notice-memo");
+
+          if (noticeDate) noticeDate.textContent = displayDate;
+          if (noticeTime) noticeTime.textContent = latest.time || '';
+          if (noticePlace) noticePlace.textContent = latest.place || '';
+          
+          if (noticeMapIcon && latest.map) {
+            noticeMapIcon.innerHTML = `
+              <a href="${latest.map}" target="_blank" title="지도 보기" style="display:inline-flex; align-items:center; color:#2A6B52; transition:color 0.2s ease;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-map-pin" style="vertical-align:middle; cursor:pointer;">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                  <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+              </a>
+            `;
+          } else if (noticeMapIcon) {
+            noticeMapIcon.innerHTML = '';
+          }
+
+          if (noticeMemo) {
+            noticeMemo.innerHTML = latest.notice ? `📌 ${latest.notice}` : '📌 특별한 공지사항이 없습니다.';
+          }
+        }
+      })
+      .catch(err => {
+        console.error("Failed to load meeting info from spreadsheet", err);
+      });
+  };
+
+  // Initial Load
+  loadLatestMeeting();
+  
+  // Reload immediately when admin registers a new meeting
+  window.addEventListener("readers-meeting-added", () => {
+    loadLatestMeeting();
   });
 </script>
 </x-dc>
