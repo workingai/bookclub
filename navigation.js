@@ -1,3 +1,5 @@
+const API_URL = "https://script.google.com/macros/s/AKfycbxqJukWhIxtRm-XmZLZUNdfQLu0vfL6QnAwG_K4uCubRVqrWC-9dOpNAMYuvxJEUy44Kg/exec";
+
 class ReadersNav extends HTMLElement {
   connectedCallback() {
     // Check if we are on the index page
@@ -8,13 +10,45 @@ class ReadersNav extends HTMLElement {
     shadow.innerHTML = `
       <div style="background:oklch(0.98 0.008 80 / 0.9);backdrop-filter:blur(8px);border-bottom:1px solid oklch(0.9 0.01 60);width:100%;">
         <div style="max-width:1200px;margin:0 auto;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;box-sizing:border-box;">
-          <a href="${prefix}#" style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:24px;letter-spacing:-0.01em;color:inherit;text-decoration:none;">Reader's Club</a>
-          <div style="display:flex;gap:32px;font-size:14px;font-weight:500;color:oklch(0.4 0.02 60);">
+          <a href="${prefix}#" style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:24px;letter-spacing:-0.01em;color:inherit;text-decoration:none;">Book Club</a>
+          <div style="display:flex;align-items:center;gap:32px;font-size:14px;font-weight:500;color:oklch(0.4 0.02 60);">
             <a href="${prefix}#notice" style="color:#2A6B52;text-decoration:none;">공지</a>
             <a href="${prefix}#book" style="color:#2A6B52;text-decoration:none;">이번달 책</a>
             <a href="${prefix}#apply" style="color:#2A6B52;text-decoration:none;">Topic 등록</a>
             <a href="${prefix}#archive" style="color:#2A6B52;text-decoration:none;">지난 모임</a>
+            
+            <!-- Login State Container -->
+            <div id="auth-container" style="display:flex;align-items:center;gap:12px;">
+              <!-- Will be populated dynamically -->
+            </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Login Modal Overlay -->
+      <div id="login-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
+        <div style="background:white; padding:32px; border-radius:12px; width:360px; box-shadow:0 20px 40px rgba(0,0,0,0.2); box-sizing:border-box; font-family:'Noto Sans KR',sans-serif; position:relative; color: #333;">
+          <button id="modal-close-btn" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:22px; cursor:pointer; color:#999; line-height:1;">&times;</button>
+          <h3 style="margin:0 0 20px; font-size:18px; font-weight:700; color:#2A6B52;">로그인</h3>
+          
+          <div style="margin-bottom:16px;">
+            <label style="display:block; font-size:12px; color:#666; margin-bottom:6px; font-weight:600;">사용자 ID (이름)</label>
+            <input type="text" id="login-id-input" placeholder="이름을 입력하세요" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px; outline:none; font-family:inherit;">
+          </div>
+          
+          <div style="margin-bottom:16px; display:flex; align-items:center; gap:8px;">
+            <input type="checkbox" id="signup-check" style="cursor:pointer; width:16px; height:16px;">
+            <label for="signup-check" style="font-size:13px; cursor:pointer; user-select:none; font-weight:500;">최초 가입입니다</label>
+          </div>
+          
+          <div id="code-field" style="display:none; margin-bottom:20px;">
+            <label style="display:block; font-size:12px; color:#666; margin-bottom:6px; font-weight:600;">가입 코드</label>
+            <input type="text" id="signup-code-input" placeholder="가입 코드를 입력하세요" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px; outline:none; font-family:inherit;">
+          </div>
+          
+          <div id="modal-error-msg" style="color:#d93025; font-size:12px; margin-bottom:16px; display:none; line-height:1.4;"></div>
+          
+          <button id="modal-submit-btn" style="width:100%; background:#2A6B52; color:white; border:none; padding:12px; border-radius:6px; font-weight:600; font-size:14px; cursor:pointer; transition:background 0.2s ease;">확인</button>
         </div>
       </div>
     `;
@@ -37,6 +71,125 @@ class ReadersNav extends HTMLElement {
       }
     `;
     shadow.appendChild(style);
+
+    const authContainer = shadow.getElementById("auth-container");
+    const loginModal = shadow.getElementById("login-modal");
+    const closeBtn = shadow.getElementById("modal-close-btn");
+    const submitBtn = shadow.getElementById("modal-submit-btn");
+    const idInput = shadow.getElementById("login-id-input");
+    const signupCheck = shadow.getElementById("signup-check");
+    const codeField = shadow.getElementById("code-field");
+    const codeInput = shadow.getElementById("signup-code-input");
+    const errorMsg = shadow.getElementById("modal-error-msg");
+
+    // Check login state
+    const updateAuthState = () => {
+      const savedUser = localStorage.getItem("readers_user_id");
+      if (savedUser) {
+        authContainer.innerHTML = `
+          <span style="color:#2A6B52; font-weight:600; font-size:13px;">${savedUser} 님</span>
+          <button id="logout-btn" style="background:none; border:1px solid #2A6B52; color:#2A6B52; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:600; font-size:12px; font-family:'Noto Sans KR',sans-serif; transition:all 0.2s ease; line-height:1.2;">로그아웃</button>
+        `;
+        // Attach logout listener
+        authContainer.querySelector("#logout-btn").addEventListener("click", () => {
+          localStorage.removeItem("readers_user_id");
+          updateAuthState();
+          window.dispatchEvent(new CustomEvent("readers-logout"));
+        });
+      } else {
+        authContainer.innerHTML = `
+          <button id="login-btn" style="background:#2A6B52; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:600; font-size:13px; font-family:'Noto Sans KR',sans-serif; transition:background 0.2s ease;">로그인</button>
+        `;
+        // Attach login listener
+        authContainer.querySelector("#login-btn").addEventListener("click", () => {
+          errorMsg.style.display = "none";
+          idInput.value = "";
+          signupCheck.checked = false;
+          codeField.style.display = "none";
+          codeInput.value = "";
+          loginModal.style.display = "flex";
+        });
+      }
+    };
+
+    // Close Modal
+    closeBtn.addEventListener("click", () => {
+      loginModal.style.display = "none";
+    });
+
+    // Toggle Sign-up Code field
+    signupCheck.addEventListener("change", () => {
+      if (signupCheck.checked) {
+        codeField.style.display = "block";
+      } else {
+        codeField.style.display = "none";
+      }
+    });
+
+    // Submit login/registration
+    submitBtn.addEventListener("click", async () => {
+      const idVal = idInput.value.trim();
+      errorMsg.style.display = "none";
+
+      if (!idVal) {
+        errorMsg.textContent = "ID(이름)를 입력해 주세요.";
+        errorMsg.style.display = "block";
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "처리 중...";
+
+      try {
+        if (signupCheck.checked) {
+          // Signup process
+          const codeVal = codeInput.value.trim();
+          if (codeVal !== "bookclub") {
+            throw new Error("가입 코드가 올바르지 않습니다.");
+          }
+
+          // Register in members sheet
+          const res = await fetch(API_URL, {
+            method: "POST",
+            mode: "cors",
+            headers: {
+              "Content-Type": "text/plain"
+            },
+            body: JSON.stringify({
+              action: "addMember",
+              id: idVal
+            })
+          });
+          const result = await res.json();
+          if (!result.success) {
+            throw new Error(result.error || "가입 처리에 실패했습니다.");
+          }
+        } else {
+          // Login check process
+          const res = await fetch(`${API_URL}?action=checkMember&id=${encodeURIComponent(idVal)}`);
+          const result = await res.json();
+          if (!result.exists) {
+            throw new Error("존재하지 않는 회원 ID입니다. 최초 가입이시라면 체크박스를 활성화해 주세요.");
+          }
+        }
+
+        // Successfully logged in/registered
+        localStorage.setItem("readers_user_id", idVal);
+        loginModal.style.display = "none";
+        updateAuthState();
+        
+        // Dispatch custom login event in case other components need to react
+        window.dispatchEvent(new CustomEvent("readers-login", { detail: idVal }));
+      } catch (err) {
+        errorMsg.textContent = err.message || err.toString();
+        errorMsg.style.display = "block";
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "확인";
+      }
+    });
+
+    updateAuthState();
   }
 }
 
@@ -61,7 +214,6 @@ class ReadersArchive extends HTMLElement {
       </div>
     `;
 
-    const API_URL = "https://script.google.com/macros/s/AKfycbzYkkbDw6IFe926bTiSu7qYIeqTFeH3m8nxScZJF454rc_BLxB0SVUYdMKsWd8g1qdjVQ/exec";
     let archiveData = [];
     let visibleCount = 4;
 
@@ -103,7 +255,7 @@ class ReadersArchive extends HTMLElement {
         item.style.transition = "opacity 0.5s ease, transform 0.5s ease";
         
         item.innerHTML = `
-          <div style="width:100%; aspect-ratio:3/4.4; border-radius:8px; overflow:hidden; margin-bottom:12px; box-shadow:0 8px 24px rgba(0,0,0,0.06); background:#fcfcfc; position:relative;">
+          <div style="width:100%; height:0; padding-top:146.67%; border-radius:8px; overflow:hidden; margin-bottom:12px; box-shadow:0 8px 24px rgba(0,0,0,0.06); background:#fcfcfc; position:relative;">
             <img src="${book.url || ''}" alt="${book.name || ''}" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; display:block;" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\' viewBox=\\'0 0 100 100\\'><rect width=\\'100\\' height=\\'100\\' fill=\\'%23efefef\\'/><text x=\\'50%\\' y=\\'50%\\' dominant-baseline=\\'middle\\' text-anchor=\\'middle\\' font-size=\\'12\\' fill=\\'%23999\\'>이미지 없음</text></svg>'">
           </div>
           <div style="font-size:14px; font-weight:600; margin-bottom:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:'Noto Sans KR',sans-serif;">${book.name || '제목 없음'}</div>
