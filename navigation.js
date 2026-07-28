@@ -756,16 +756,18 @@ class ReadersArchive extends HTMLElement {
         }
 
         const item = document.createElement("div");
+        item.style.display = "flex";
+        item.style.flexDirection = "column";
         item.style.opacity = "0";
         item.style.transform = "translateY(15px)";
         item.style.transition = "opacity 0.5s ease, transform 0.5s ease";
         
         item.innerHTML = `
-          <div style="width:100%; aspect-ratio:3/4.4; border-radius:8px; overflow:hidden; margin-bottom:12px; box-shadow:0 8px 24px rgba(0,0,0,0.06); background:#fcfcfc;">
+          <div style="width:280px; height:410px; border-radius:8px; overflow:hidden; margin-bottom:12px; box-shadow:0 8px 24px rgba(0,0,0,0.06); background:#fcfcfc; flex-shrink:0; margin-left:auto; margin-right:auto;">
             <img src="${book.url || ''}" alt="${book.name || ''}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\' viewBox=\\'0 0 100 100\\'><rect width=\\'100\\' height=\\'100\\' fill=\\'%23efefef\\'/><text x=\\'50%\\' y=\\'50%\\' dominant-baseline=\\'middle\\' text-anchor=\\'middle\\' font-size=\\'12\\' fill=\\'%23999\\'>이미지 없음</text></svg>'">
           </div>
-          <div style="font-size:14px; font-weight:600; margin-bottom:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:'Noto Sans KR',sans-serif;">${book.name || '제목 없음'}</div>
-          <div style="font-size:12px; color:oklch(0.5 0.02 60); display:flex; justify-content:space-between; align-items:center; font-family:'Noto Sans KR',sans-serif;">
+          <div style="font-size:14px; font-weight:600; margin-bottom:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:'Noto Sans KR',sans-serif; text-align:left; width:280px; margin-left:auto; margin-right:auto;">${book.name || '제목 없음'}</div>
+          <div style="font-size:12px; color:oklch(0.5 0.02 60); display:flex; justify-content:space-between; align-items:center; font-family:'Noto Sans KR',sans-serif; width:280px; margin-left:auto; margin-right:auto;">
             <span>${monthString}</span>
             <span style="font-size:11px; opacity:0.8;">${book.author || ''}</span>
           </div>
