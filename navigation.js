@@ -40,3 +40,97 @@ class ReadersNav extends HTMLElement {
 }
 
 customElements.define('readers-nav', ReadersNav);
+
+class ReadersArchive extends HTMLElement {
+  connectedCallback() {
+    this.innerHTML = `
+      <div id="archive-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;">
+        <div style="grid-column: span 4; text-align: center; color: oklch(0.5 0.02 60); font-size: 14px; padding: 40px 0;">도서 목록을 불러오는 중입니다...</div>
+      </div>
+      <div style="text-align:center;margin-top:48px;">
+        <button id="more-archive-btn" style="display:none;background:none;border:none;color:#2A6B52;font-size:15px;font-weight:700;cursor:pointer;padding:12px 28px;transition:all 0.2s ease;font-family:'Fredoka',sans-serif;letter-spacing:0.05em;border:2px solid #2A6B52;border-radius:30px;">more →</button>
+      </div>
+    `;
+
+    const API_URL = "https://script.google.com/macros/s/AKfycbzYkkbDw6IFe926bTiSu7qYIeqTFeH3m8nxScZJF454rc_BLxB0SVUYdMKsWd8g1qdjVQ/exec";
+    let archiveData = [];
+    let visibleCount = 4;
+
+    const grid = this.querySelector("#archive-grid");
+    const btn = this.querySelector("#more-archive-btn");
+
+    btn.addEventListener("mouseenter", () => {
+      btn.style.background = "#2A6B52";
+      btn.style.color = "#fff";
+    });
+    btn.addEventListener("mouseleave", () => {
+      btn.style.background = "none";
+      btn.style.color = "#2A6B52";
+    });
+
+    const renderArchive = () => {
+      grid.innerHTML = "";
+      const slice = archiveData.slice(0, visibleCount);
+      slice.forEach(book => {
+        const dateVal = book.date || book.data;
+        const dObj = new Date(dateVal);
+        let monthString = "";
+        if (dObj && !isNaN(dObj)) {
+          monthString = `${dObj.getMonth() + 1}월 모임`;
+        } else {
+          monthString = dateVal || "";
+        }
+
+        const item = document.createElement("div");
+        item.style.opacity = "0";
+        item.style.transform = "translateY(15px)";
+        item.style.transition = "opacity 0.5s ease, transform 0.5s ease";
+        
+        item.innerHTML = `
+          <div style="aspect-ratio:3/4.4; border-radius:8px; overflow:hidden; margin-bottom:12px; box-shadow:0 8px 24px rgba(0,0,0,0.06); background:#fcfcfc;">
+            <img src="${book.url || ''}" alt="${book.name || ''}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\' viewBox=\\'0 0 100 100\\'><rect width=\\'100\\' height=\\'100\\' fill=\\'%23efefef\\'/><text x=\\'50%\\' y=\\'50%\\' dominant-baseline=\\'middle\\' text-anchor=\\'middle\\' font-size=\\'12\\' fill=\\'%23999\\'>이미지 없음</text></svg>'">
+          </div>
+          <div style="font-size:14px; font-weight:600; margin-bottom:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${book.name || '제목 없음'}</div>
+          <div style="font-size:12px; color:oklch(0.5 0.02 60); display:flex; justify-content:space-between; align-items:center;">
+            <span>${monthString}</span>
+            <span style="font-size:11px; opacity:0.8;">${book.author || ''}</span>
+          </div>
+        `;
+        grid.appendChild(item);
+        
+        setTimeout(() => {
+          item.style.opacity = "1";
+          item.style.transform = "translateY(0)";
+        }, 30);
+      });
+
+      if (visibleCount < archiveData.length) {
+        btn.style.display = "inline-block";
+      } else {
+        btn.style.display = "none";
+      }
+    };
+
+    btn.addEventListener("click", () => {
+      visibleCount += 8;
+      renderArchive();
+    });
+
+    fetch(API_URL + "?action=getArchive")
+      .then(res => res.json())
+      .then(data => {
+        data.sort((a, b) => {
+          const dateA = new Date(a.date || a.data);
+          const dateB = new Date(b.date || b.data);
+          return dateB - dateA;
+        });
+        archiveData = data;
+        renderArchive();
+      })
+      .catch(err => {
+        console.error("Failed to load archive", err);
+        grid.innerHTML = `<div style="grid-column: span 4; text-align: center; color: #ff4d4f; font-size: 14px; padding: 40px 0;">목록을 불러오지 못했습니다. 다시 시도해 주세요.</div>`;
+      });
+  }
+}
+customElements.define('readers-archive', ReadersArchive);
