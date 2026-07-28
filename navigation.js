@@ -758,7 +758,8 @@ class ReadersArchive extends HTMLElement {
         const item = document.createElement("div");
         item.style.display = "flex";
         item.style.flexDirection = "column";
-        item.style.height = "100%";
+        item.style.height = "360px";
+        item.style.boxSizing = "border-box";
         item.style.opacity = "0";
         item.style.transform = "translateY(15px)";
         item.style.transition = "opacity 0.5s ease, transform 0.5s ease";
