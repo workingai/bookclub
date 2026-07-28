@@ -91,31 +91,60 @@ class ReadersNav extends HTMLElement {
             <input type="date" id="admin-date-input" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px; outline:none; font-family:inherit;">
           </div>
           
-          <!-- Time -->
+          <!-- Start Time -->
           <div style="margin-bottom:16px;">
-            <label style="display:block; font-size:13px; color:#444; margin-bottom:8px; font-weight:600;">시간을 입력하세요</label>
+            <label style="display:block; font-size:13px; color:#444; margin-bottom:8px; font-weight:600;">시작 시간을 입력하세요</label>
             <div style="display:flex; gap:8px;">
-              <select id="admin-ampm-select" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px; font-size:14px; outline:none; background:white; font-family:inherit;">
+              <select id="admin-start-ampm" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px; font-size:14px; outline:none; background:white; font-family:inherit;">
                 <option value="오후">오후</option>
                 <option value="오전">오전</option>
               </select>
-              <select id="admin-hour-select" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px; font-size:14px; outline:none; background:white; font-family:inherit;">
-                <option value="7">7시</option>
-                <option value="1">1시</option>
+              <select id="admin-start-hour" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px; font-size:14px; outline:none; background:white; font-family:inherit;">
                 <option value="2">2시</option>
+                <option value="1">1시</option>
                 <option value="3">3시</option>
                 <option value="4">4시</option>
                 <option value="5">5시</option>
                 <option value="6">6시</option>
+                <option value="7">7시</option>
                 <option value="8">8시</option>
                 <option value="9">9시</option>
                 <option value="10">10시</option>
                 <option value="11">11시</option>
                 <option value="12">12시</option>
               </select>
-              <select id="admin-min-select" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px; font-size:14px; outline:none; background:white; font-family:inherit;">
-                <option value="30">30분</option>
+              <select id="admin-start-min" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px; font-size:14px; outline:none; background:white; font-family:inherit;">
                 <option value="00">00분</option>
+                <option value="30">30분</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- End Time -->
+          <div style="margin-bottom:16px;">
+            <label style="display:block; font-size:13px; color:#444; margin-bottom:8px; font-weight:600;">종료 시간을 입력하세요</label>
+            <div style="display:flex; gap:8px;">
+              <select id="admin-end-ampm" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px; font-size:14px; outline:none; background:white; font-family:inherit;">
+                <option value="오후">오후</option>
+                <option value="오전">오전</option>
+              </select>
+              <select id="admin-end-hour" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px; font-size:14px; outline:none; background:white; font-family:inherit;">
+                <option value="5">5시</option>
+                <option value="1">1시</option>
+                <option value="2">2시</option>
+                <option value="3">3시</option>
+                <option value="4">4시</option>
+                <option value="6">6시</option>
+                <option value="7">7시</option>
+                <option value="8">8시</option>
+                <option value="9">9시</option>
+                <option value="10">10시</option>
+                <option value="11">11시</option>
+                <option value="12">12시</option>
+              </select>
+              <select id="admin-end-min" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px; font-size:14px; outline:none; background:white; font-family:inherit;">
+                <option value="00">00분</option>
+                <option value="30">30분</option>
               </select>
             </div>
           </div>
@@ -134,8 +163,31 @@ class ReadersNav extends HTMLElement {
           </div>
           
           <div id="admin-modal-error-msg" style="color:#d93025; font-size:12px; margin-bottom:16px; display:none; line-height:1.4;"></div>
-          
           <button id="admin-modal-submit-btn" style="width:100%; background:#2A6B52; color:white; border:none; padding:12px; border-radius:6px; font-weight:600; font-size:14px; cursor:pointer; transition:background 0.2s ease;">등록 완료</button>
+        </div>
+      </div>
+
+      <!-- Book Recommendation Modal Overlay -->
+      <div id="book-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
+        <div style="background:white; padding:32px; border-radius:12px; width:420px; box-shadow:0 20px 40px rgba(0,0,0,0.2); box-sizing:border-box; font-family:'Noto Sans KR',sans-serif; position:relative; color: #333;">
+          <button id="book-modal-close-btn" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:22px; cursor:pointer; color:#999; line-height:1;">&times;</button>
+          
+          <h3 style="margin:0 0 4px; font-size:18px; font-weight:700; color:#2A6B52;">책 추천하기</h3>
+          <div id="book-user-display" style="font-size:13px; color:#666; margin-bottom:24px; font-weight:500;">추천자: 님</div>
+          
+          <div style="margin-bottom:20px;">
+            <label style="display:block; font-size:13px; color:#444; margin-bottom:8px; font-weight:600;">추천하실 책은 무엇인가요?</label>
+            <input type="text" id="book-name-input" placeholder="책 제목을 입력해 주세요" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px; outline:none; font-family:inherit;">
+          </div>
+          
+          <div style="margin-bottom:24px;">
+            <label style="display:block; font-size:13px; color:#444; margin-bottom:8px; font-weight:600;">책 이미지 링크를 알면 입력해주세요 (yes24 기준)</label>
+            <input type="url" id="book-url-input" placeholder="http:// 또는 https://로 시작하는 이미지 주소" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px; outline:none; font-family:inherit;">
+          </div>
+          
+          <div id="book-modal-error-msg" style="color:#d93025; font-size:12px; margin-bottom:16px; display:none; line-height:1.4;"></div>
+          
+          <button id="book-modal-submit-btn" style="width:100%; background:#2A6B52; color:white; border:none; padding:12px; border-radius:6px; font-weight:600; font-size:14px; cursor:pointer; transition:background 0.2s ease;">추천 완료</button>
         </div>
       </div>
     `;
@@ -409,9 +461,12 @@ class ReadersNav extends HTMLElement {
     const adminCloseBtn = shadow.getElementById("admin-modal-close-btn");
     const adminSubmitBtn = shadow.getElementById("admin-modal-submit-btn");
     const adminDateInput = shadow.getElementById("admin-date-input");
-    const adminAmPm = shadow.getElementById("admin-ampm-select");
-    const adminHour = shadow.getElementById("admin-hour-select");
-    const adminMin = shadow.getElementById("admin-min-select");
+    const adminStartAmPm = shadow.getElementById("admin-start-ampm");
+    const adminStartHour = shadow.getElementById("admin-start-hour");
+    const adminStartMin = shadow.getElementById("admin-start-min");
+    const adminEndAmPm = shadow.getElementById("admin-end-ampm");
+    const adminEndHour = shadow.getElementById("admin-end-hour");
+    const adminEndMin = shadow.getElementById("admin-end-min");
     const adminNoticeInput = shadow.getElementById("admin-notice-input");
     const adminPlaceInput = shadow.getElementById("admin-place-input");
     const adminMapInput = shadow.getElementById("admin-map-input");
@@ -443,9 +498,12 @@ class ReadersNav extends HTMLElement {
     // Admin Submit
     adminSubmitBtn.addEventListener("click", async () => {
       const dateVal = adminDateInput.value;
-      const ampmVal = adminAmPm.value;
-      const hourVal = adminHour.value;
-      const minVal = adminMin.value;
+      const startAmPmVal = adminStartAmPm.value;
+      const startHourVal = adminStartHour.value;
+      const startMinVal = adminStartMin.value;
+      const endAmPmVal = adminEndAmPm.value;
+      const endHourVal = adminEndHour.value;
+      const endMinVal = adminEndMin.value;
       const noticeVal = adminNoticeInput.value.trim();
       const placeVal = adminPlaceInput.value.trim();
       const mapVal = adminMapInput.value.trim();
@@ -463,7 +521,8 @@ class ReadersNav extends HTMLElement {
         return;
       }
 
-      const timeVal = `${ampmVal} ${hourVal}시 ${minVal}분`;
+      const startVal = `${startAmPmVal} ${startHourVal}시 ${startMinVal}분`;
+      const endVal = `${endAmPmVal} ${endHourVal}시 ${endMinVal}분`;
 
       adminSubmitBtn.disabled = true;
       adminSubmitBtn.textContent = "등록 중...";
@@ -478,7 +537,8 @@ class ReadersNav extends HTMLElement {
           body: JSON.stringify({
             action: "addMeeting",
             date: dateVal,
-            time: timeVal,
+            start: startVal,
+            end: endVal,
             notice: noticeVal,
             place: placeVal,
             map: mapVal
@@ -500,6 +560,87 @@ class ReadersNav extends HTMLElement {
       } finally {
         adminSubmitBtn.disabled = false;
         adminSubmitBtn.textContent = "등록 완료";
+      }
+    });
+
+    // Book Recommendation Modal elements
+    const bookModal = shadow.getElementById("book-modal");
+    const bookCloseBtn = shadow.getElementById("book-modal-close-btn");
+    const bookSubmitBtn = shadow.getElementById("book-modal-submit-btn");
+    const bookNameInput = shadow.getElementById("book-name-input");
+    const bookUrlInput = shadow.getElementById("book-url-input");
+    const bookUserDisplay = shadow.getElementById("book-user-display");
+    const bookErrorMsg = shadow.getElementById("book-modal-error-msg");
+
+    bookCloseBtn.addEventListener("click", () => {
+      bookModal.style.display = "none";
+    });
+
+    const openBookModal = (username) => {
+      bookUserDisplay.textContent = `추천자: ${username} 님`;
+      bookNameInput.value = "";
+      bookUrlInput.value = "";
+      bookErrorMsg.style.display = "none";
+      bookModal.style.display = "flex";
+    };
+
+    window.addEventListener("open-book-modal", () => {
+      const savedUser = localStorage.getItem("readers_user_id");
+      if (!savedUser) {
+        alert("책을 추천하려면 먼저 로그인해 주세요.");
+        const loginModal = shadow.getElementById("login-modal");
+        if (loginModal) loginModal.style.display = "flex";
+        return;
+      }
+      openBookModal(savedUser);
+    });
+
+    bookSubmitBtn.addEventListener("click", async () => {
+      const nameVal = bookNameInput.value.trim();
+      const urlVal = bookUrlInput.value.trim();
+      const savedUser = localStorage.getItem("readers_user_id");
+
+      bookErrorMsg.style.display = "none";
+
+      if (!nameVal) {
+        bookErrorMsg.textContent = "추천할 책 제목을 입력해 주세요.";
+        bookErrorMsg.style.display = "block";
+        return;
+      }
+
+      bookSubmitBtn.disabled = true;
+      bookSubmitBtn.textContent = "등록 중...";
+
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          mode: "cors",
+          headers: {
+            "Content-Type": "text/plain"
+          },
+          body: JSON.stringify({
+            action: "addBook",
+            id: savedUser,
+            name: nameVal,
+            url: urlVal
+          })
+        });
+        const result = await res.json();
+        if (!result.success) {
+          throw new Error(result.error || "등록에 실패했습니다.");
+        }
+
+        alert("책 추천이 성공적으로 등록되었습니다!");
+        bookModal.style.display = "none";
+        
+        // Notify pages to reload books list
+        window.dispatchEvent(new CustomEvent("readers-book-added"));
+      } catch (err) {
+        bookErrorMsg.textContent = err.message || err.toString();
+        bookErrorMsg.style.display = "block";
+      } finally {
+        bookSubmitBtn.disabled = false;
+        bookSubmitBtn.textContent = "추천 완료";
       }
     });
 
@@ -663,132 +804,105 @@ class ReadersTopics extends HTMLElement {
           width: 100%;
           font-family: 'Noto Sans KR', sans-serif;
         }
-        .topic-card {
-          flex: 0 0 calc((100% - 48px) / 3);
-          box-sizing: border-box;
+        .topic-list {
           display: flex;
           flex-direction: column;
-          padding: 28px 24px;
-          background: #FFFFFF;
-          border: 1px solid #DCDCDC;
+          gap: 16px;
+          width: 100%;
+        }
+        .topic-item {
+          background: #FCFCFC;
+          border: 1px solid #ECECEC;
           border-radius: 12px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.02);
-          min-height: 220px;
-          justify-content: space-between;
+          padding: 20px 24px;
+          display: flex;
+          align-items: center;
+          gap: 24px;
+          box-sizing: border-box;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        @media (max-width: 900px) {
-          .topic-card {
-            flex: 0 0 calc((100% - 24px) / 2);
+        .topic-item:hover {
+          background: #F7FAF9;
+          border-color: #2A6B52;
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px rgba(42, 107, 82, 0.06);
+        }
+        .book-badge {
+          background: #E8F0ED;
+          color: #2A6B52;
+          font-weight: 700;
+          padding: 6px 14px;
+          border-radius: 6px;
+          font-size: 13px;
+          min-width: 100px;
+          max-width: 160px;
+          text-align: center;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .topic-text {
+          font-size: 15px;
+          color: #333;
+          line-height: 1.6;
+          flex: 1;
+          font-weight: 500;
+        }
+        .user-id {
+          font-size: 13px;
+          color: oklch(0.5 0.02 60);
+          white-space: nowrap;
+          font-weight: 600;
+          margin-left: 12px;
+        }
+        @media (max-width: 680px) {
+          .topic-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
           }
-        }
-        @media (max-width: 600px) {
-          .topic-card {
-            flex: 0 0 100%;
+          .book-badge {
+            align-self: flex-start;
+            min-width: unset;
+            max-width: 100%;
+          }
+          .user-id {
+            align-self: flex-end;
+            margin-left: 0;
           }
         }
       </style>
-      <div style="display: flex; align-items: center; justify-content: center; position: relative; width: 100%; box-sizing: border-box;">
-        <span style="font-family: Georgia, serif; font-size: 100px; color: #2A6B52; opacity: 0.15; line-height: 1; margin-right: 16px; user-select: none; align-self: flex-start; margin-top: -24px;">“</span>
-        
-        <div id="carousel-viewport" style="overflow: hidden; width: 100%; position: relative;">
-          <div id="carousel-track" style="display: flex; gap: 24px; transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94); padding: 12px 4px;">
-            <div style="width: 100%; text-align: center; color: oklch(0.5 0.02 60); font-size: 14px; padding: 40px 0;">질문 목록을 불러오는 중입니다...</div>
-          </div>
-        </div>
-        
-        <span style="font-family: Georgia, serif; font-size: 100px; color: #2A6B52; opacity: 0.15; line-height: 1; margin-left: 16px; user-select: none; align-self: flex-end; margin-bottom: -44px;">”</span>
-      </div>
-      
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 24px; width: 100%; box-sizing: border-box; padding: 0 4px;">
-        <div></div>
-        <div style="display: flex; gap: 12px;">
-          <button id="prev-btn" style="background: white; border: 1px solid #DCDCDC; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #2A6B52; font-weight: bold; box-shadow: 0 4px 8px rgba(0,0,0,0.05); transition: all 0.2s ease;">&lt;</button>
-          <button id="next-btn" style="background: white; border: 1px solid #DCDCDC; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #2A6B52; font-weight: bold; box-shadow: 0 4px 8px rgba(0,0,0,0.05); transition: all 0.2s ease;">&gt;</button>
-        </div>
+      <div id="topics-container" class="topic-list">
+        <div style="text-align: center; color: oklch(0.5 0.02 60); font-size: 14px; padding: 40px 0;">질문 목록을 불러오는 중입니다...</div>
       </div>
     `;
 
     let topicsData = [];
-    let currentIndex = 0;
-
-    const track = shadow.getElementById("carousel-track");
-    const prevBtn = shadow.getElementById("prev-btn");
-    const nextBtn = shadow.getElementById("next-btn");
-
-    const getVisibleCount = () => {
-      const width = window.innerWidth;
-      if (width <= 600) return 1;
-      if (width <= 900) return 2;
-      return 3;
-    };
-
-    const getMaxIndex = () => {
-      return Math.max(0, topicsData.length - getVisibleCount());
-    };
-
-    const updateCarousel = () => {
-      if (track.children.length === 0 || topicsData.length === 0) return;
-      const cardWidth = track.children[0].getBoundingClientRect().width;
-      const gap = 24;
-      const offset = currentIndex * (cardWidth + gap);
-      track.style.transform = `translateX(-${offset}px)`;
-
-      const maxIdx = getMaxIndex();
-      prevBtn.style.opacity = currentIndex === 0 ? "0.3" : "1";
-      prevBtn.style.cursor = currentIndex === 0 ? "default" : "pointer";
-      nextBtn.style.opacity = currentIndex >= maxIdx ? "0.3" : "1";
-      nextBtn.style.cursor = currentIndex >= maxIdx ? "default" : "pointer";
-    };
-
-    prevBtn.addEventListener("click", () => {
-      if (currentIndex > 0) {
-        currentIndex--;
-        updateCarousel();
-      }
-    });
-
-    nextBtn.addEventListener("click", () => {
-      if (currentIndex < getMaxIndex()) {
-        currentIndex++;
-        updateCarousel();
-      }
-    });
-
-    window.addEventListener("resize", () => {
-      if (currentIndex > getMaxIndex()) {
-        currentIndex = getMaxIndex();
-      }
-      updateCarousel();
-    });
+    const container = shadow.getElementById("topics-container");
 
     const renderTopics = () => {
-      track.innerHTML = "";
+      container.innerHTML = "";
       if (topicsData.length === 0) {
-        track.innerHTML = `<div style="width: 100%; text-align: center; color: oklch(0.5 0.02 60); font-size: 14px; padding: 40px 0;">등록된 질문이 없습니다. 첫 질문을 등록해 보세요!</div>`;
+        container.innerHTML = `<div style="text-align: center; color: oklch(0.5 0.02 60); font-size: 14px; padding: 40px 0;">등록된 질문이 없습니다. 첫 질문을 등록해 보세요!</div>`;
         return;
       }
 
       topicsData.forEach(item => {
-        const card = document.createElement("div");
-        card.className = "topic-card";
-        card.innerHTML = `
-          <div>
-            <div style="background: #E8F0ED; color: #2A6B52; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 4px; display: inline-block; margin-bottom: 14px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family:'Noto Sans KR', sans-serif;">
-              ${item.Book || '자유 선택 도서'}
-            </div>
-            <div style="font-size: 15px; font-weight: 500; line-height: 1.6; color: #333; font-family:'Noto Sans KR', sans-serif; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">
-              ${item.Topic || '질문 내용이 없습니다.'}
-            </div>
+        const row = document.createElement("div");
+        row.className = "topic-item";
+        row.innerHTML = `
+          <div class="book-badge" title="${item.Book || '자유 선택'}">
+            ${item.Book || '자유 선택'}
           </div>
-          <div style="font-size: 13px; color: oklch(0.5 0.02 60); font-weight: 600; text-align: right; margin-top: 14px; font-family:'Noto Sans KR', sans-serif;">
+          <div class="topic-text">
+            ${item.Topic || '질문 내용이 없습니다.'}
+          </div>
+          <div class="user-id">
             — ${item.ID || '익명'}
           </div>
         `;
-        track.appendChild(card);
+        container.appendChild(row);
       });
-
-      currentIndex = 0;
-      setTimeout(updateCarousel, 50);
     };
 
     const loadData = () => {

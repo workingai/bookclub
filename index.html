@@ -147,10 +147,10 @@
   <div id="discussion" style="background:#EAEAEA;padding:90px 0;">
     <div style="max-width:1200px;margin:0 auto;padding:0 24px;box-sizing:border-box;">
       <div style="font-family:'Noto Serif KR',serif;font-size:32px;font-weight:700;margin-bottom:12px;">함께 이야기 나눌 질문들</div>
-      <div style="font-size:15px;line-height:1.6;color:oklch(0.45 0.02 60);margin-bottom:48px;max-width:680px;">함께 이야기 나누고 싶은 내용에 대해 적어 주세요.<br>질문에 대한 답은 미리 생각해오시면 좋지만, 대화 중에 자연스럽게 떠오르는 이야기도 환영해요.</div>
+      <div style="font-size:15px;line-height:1.6;color:oklch(0.45 0.02 60);margin-bottom:28px;max-width:680px;">함께 이야기 나누고 싶은 내용에 대해 적어 주세요.<br>질문에 대한 답은 미리 생각해오시면 좋지만, 대화 중에 자연스럽게 떠오르는 이야기도 환영해요.</div>
       
       <readers-topics></readers-topics>
-      <div style="text-align:left;">
+      <div style="text-align:left; margin-top:28px;">
         <a href="#apply" onclick="event.preventDefault(); window.dispatchEvent(new CustomEvent('open-topic-modal'))" style="display:inline-block;background:#2A6B52;color:white;padding:16px 36px;border-radius:8px;font-weight:700;font-size:16px;text-decoration:none;transition:background 0.2s ease;box-shadow:0 10px 20px -5px rgba(42, 107, 82, 0.3);">Topic 등록하기 →</a>
       </div>
     </div>
@@ -160,10 +160,9 @@
   <div id="apply" style="background:#2A6B52;padding:90px 0;">
     <div style="max-width:1200px;margin:0 auto;padding:0 24px;box-sizing:border-box;text-align:left;">
       <div style="max-width:640px;margin:0;">
-        <div style="font-family:'Noto Serif KR',serif;font-size:32px;font-weight:700;color:oklch(0.98 0.01 60);margin-bottom:14px;">이번 달 모임, 함께해요</div>
-        <div style="font-size:16px;line-height:1.8;color:oklch(0.9 0.02 60);margin-bottom:32px;">아래 버튼으로 신청서를 남겨주시면 자세한 안내를 드릴게요. 처음이신 분도 언제든 환영합니다.</div>
-        <a href="#" onclick="event.preventDefault(); window.dispatchEvent(new CustomEvent('open-topic-modal'))" style="display:inline-block;background:oklch(0.98 0.01 60);color:#2A6B52;padding:16px 36px;border-radius:8px;font-weight:700;font-size:16px;">Topic 등록하기 →</a>
-        <div style="font-size:13px;color:oklch(0.85 0.02 60);margin-top:16px;">신청 마감: 8월 13일 (목)</div>
+        <div style="font-family:'Noto Serif KR',serif;font-size:32px;font-weight:700;color:oklch(0.98 0.01 60);margin-bottom:14px;">이번 달 모임, 책을 추천해 주세요</div>
+        <div style="font-size:16px;line-height:1.8;color:oklch(0.9 0.02 60);margin-bottom:32px;">다음 모임에서 멤버들과 함께 읽고 이야기 나누고 싶은 도서가 있다면 자유롭게 추천해 주세요. 추천된 도서 목록 중에서 다음 모임 책이 선정됩니다.</div>
+        <a href="#" onclick="event.preventDefault(); window.dispatchEvent(new CustomEvent('open-book-modal'))" style="display:inline-block;background:oklch(0.98 0.01 60);color:#2A6B52;padding:16px 36px;border-radius:8px;font-weight:700;font-size:16px;">책 추천하기 →</a>
       </div>
     </div>
   </div>
@@ -211,6 +210,7 @@
 </div>
 
 <script>
+(function() {
   // Click Event Delegation
   document.addEventListener('click', function(e) {
     const target = e.target.closest('a');
@@ -218,6 +218,9 @@
       if (target.textContent.includes('Topic 등록하기')) {
         e.preventDefault();
         window.dispatchEvent(new CustomEvent('open-topic-modal'));
+      } else if (target.textContent.includes('책 추천하기')) {
+        e.preventDefault();
+        window.dispatchEvent(new CustomEvent('open-book-modal'));
       } else if (target.textContent.trim() === 'admin') {
         e.preventDefault();
         window.dispatchEvent(new CustomEvent('open-admin-modal'));
@@ -227,58 +230,117 @@
 
   // Dynamic Meeting Info Loading from Google Sheets (meeting)
   const API_URL = "https://script.google.com/macros/s/AKfycbxqJukWhIxtRm-XmZLZUNdfQLu0vfL6QnAwG_K4uCubRVqrWC-9dOpNAMYuvxJEUy44Kg/exec";
+  const CACHE_KEY = "readers_meeting_cache";
+
+  const renderMeeting = (latest) => {
+    if (!latest) return;
+
+    // Format Date (supporting both ISO strings and local formats)
+    let displayDate = latest.date || '';
+    if (latest.date) {
+      const dObj = new Date(latest.date);
+      if (dObj && !isNaN(dObj.getTime())) {
+        const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+        displayDate = `${dObj.getMonth() + 1}월 ${dObj.getDate()}일 (${weekdays[dObj.getDay()]})`;
+      }
+    }
+
+    // Format Time Range (supporting start/end columns with fallbacks and ISO time conversions)
+    const parseTimeStr = (t) => {
+      if (!t) return '';
+      // If it is an ISO date/time string from Google Sheets
+      if (String(t).includes('T')) {
+        const d = new Date(t);
+        if (d && !isNaN(d.getTime())) {
+          let hour = d.getHours();
+          const min = d.getMinutes();
+          const ampm = hour >= 12 ? '오후' : '오전';
+          if (hour > 12) hour -= 12;
+          if (hour === 0) hour = 12;
+          const minStr = min > 0 ? ` ${min}분` : '';
+          return `${ampm} ${hour}시${minStr}`;
+        }
+      }
+      return String(t);
+    };
+
+    const formatTimeRange = (start, end) => {
+      const sParsed = parseTimeStr(start);
+      if (!sParsed) return '';
+      const cleanTime = (t) => t.replace(' 00분', '').trim();
+      const sClean = cleanTime(sParsed);
+      
+      const eParsed = parseTimeStr(end);
+      if (!eParsed) return sClean;
+      const eClean = cleanTime(eParsed);
+      
+      const sParts = sClean.split(' ');
+      const eParts = eClean.split(' ');
+      if (sParts.length === 2 && eParts.length === 2 && sParts[0] === eParts[0]) {
+        return `${sParts[0]} ${sParts[1]}~${eParts[1]}`;
+      }
+      return `${sClean}~${eClean}`;
+    };
+    const displayTime = formatTimeRange(latest.start || latest.time, latest.end);
+
+    // Update Hero Card Quick Notice
+    const heroTime = document.getElementById("hero-meeting-time");
+    const heroPlace = document.getElementById("hero-meeting-place");
+    if (heroTime) heroTime.textContent = `${displayDate} ${displayTime}`;
+    if (heroPlace) heroPlace.textContent = latest.place || '';
+
+    // Update Notice Section
+    const noticeDate = document.getElementById("notice-date");
+    const noticeTime = document.getElementById("notice-time");
+    const noticePlace = document.getElementById("notice-place");
+    const noticeMapIcon = document.getElementById("notice-map-icon");
+    const noticeMemo = document.getElementById("notice-memo");
+
+    if (noticeDate) noticeDate.textContent = displayDate;
+    if (noticeTime) noticeTime.textContent = displayTime;
+    if (noticePlace) noticePlace.textContent = latest.place || '';
+    
+    if (noticeMapIcon && latest.map) {
+      noticeMapIcon.innerHTML = `
+        <a href="${latest.map}" target="_blank" title="지도 보기" style="display:inline-flex; align-items:center; color:#2A6B52; transition:color 0.2s ease;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-map-pin" style="vertical-align:middle; cursor:pointer;">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+          </svg>
+        </a>
+      `;
+    } else if (noticeMapIcon) {
+      noticeMapIcon.innerHTML = '';
+    }
+
+    if (noticeMemo) {
+      noticeMemo.innerHTML = latest.notice ? `📌 ${latest.notice}` : '📌 특별한 공지사항이 없습니다.';
+    }
+  };
 
   const loadLatestMeeting = () => {
+    // 1. Render from Cache immediately if available
+    const cached = localStorage.getItem(CACHE_KEY);
+    let cachedObj = null;
+    if (cached) {
+      try {
+        cachedObj = JSON.parse(cached);
+        renderMeeting(cachedObj);
+      } catch (e) {
+        console.error("Failed to parse cached meeting", e);
+      }
+    }
+
+    // 2. Fetch fresh data in the background
     fetch(API_URL + "?action=getMeetings")
       .then(res => res.json())
       .then(data => {
         if (data && data.length > 0) {
-          // Get the latest meeting record
           const latest = data[data.length - 1];
-
-          // Format Date (yyyy-MM-dd -> 8월 14일 (금))
-          let displayDate = latest.date || '';
-          if (latest.date && latest.date.includes('-')) {
-            const parts = latest.date.split('-');
-            if (parts.length === 3) {
-              const dObj = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-              const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
-              displayDate = `${Number(parts[1])}월 ${Number(parts[2])}일 (${weekdays[dObj.getDay()]})`;
-            }
-          }
-
-          // Update Hero Card Quick Notice
-          const heroTime = document.getElementById("hero-meeting-time");
-          const heroPlace = document.getElementById("hero-meeting-place");
-          if (heroTime) heroTime.textContent = `${displayDate} ${latest.time || ''}`;
-          if (heroPlace) heroPlace.textContent = latest.place || '';
-
-          // Update Notice Section
-          const noticeDate = document.getElementById("notice-date");
-          const noticeTime = document.getElementById("notice-time");
-          const noticePlace = document.getElementById("notice-place");
-          const noticeMapIcon = document.getElementById("notice-map-icon");
-          const noticeMemo = document.getElementById("notice-memo");
-
-          if (noticeDate) noticeDate.textContent = displayDate;
-          if (noticeTime) noticeTime.textContent = latest.time || '';
-          if (noticePlace) noticePlace.textContent = latest.place || '';
-          
-          if (noticeMapIcon && latest.map) {
-            noticeMapIcon.innerHTML = `
-              <a href="${latest.map}" target="_blank" title="지도 보기" style="display:inline-flex; align-items:center; color:#2A6B52; transition:color 0.2s ease;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-map-pin" style="vertical-align:middle; cursor:pointer;">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                  <circle cx="12" cy="10" r="3"></circle>
-                </svg>
-              </a>
-            `;
-          } else if (noticeMapIcon) {
-            noticeMapIcon.innerHTML = '';
-          }
-
-          if (noticeMemo) {
-            noticeMemo.innerHTML = latest.notice ? `📌 ${latest.notice}` : '📌 특별한 공지사항이 없습니다.';
+          const hasUpdates = JSON.stringify(latest) !== JSON.stringify(cachedObj);
+          if (hasUpdates) {
+            localStorage.setItem(CACHE_KEY, JSON.stringify(latest));
+            renderMeeting(latest);
           }
         }
       })
@@ -294,6 +356,7 @@
   window.addEventListener("readers-meeting-added", () => {
     loadLatestMeeting();
   });
+})();
 </script>
 </x-dc>
 </body>
