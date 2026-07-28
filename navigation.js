@@ -1061,4 +1061,133 @@ class ReadersTopics extends HTMLElement {
   }
 }
 customElements.define('readers-topics', ReadersTopics);
+
+// ============================================================
+// Meeting Info Loader (same pattern as Topics/Archive)
+// ============================================================
+const MEETING_CACHE_KEY = "readers_meeting_cache";
+
+function renderMeeting(latest) {
+  if (!latest) return;
+
+  let displayDate = latest.date || '';
+  if (latest.date) {
+    const dObj = new Date(latest.date);
+    if (dObj && !isNaN(dObj.getTime())) {
+      const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+      displayDate = `${dObj.getMonth() + 1}월 ${dObj.getDate()}일 (${weekdays[dObj.getDay()]})`;
+    }
+  }
+
+  const parseTimeStr = (t) => {
+    if (!t) return '';
+    if (String(t).includes('T')) {
+      const d = new Date(t);
+      if (d && !isNaN(d.getTime())) {
+        let hour = d.getHours();
+        const min = d.getMinutes();
+        const ampm = hour >= 12 ? '오후' : '오전';
+        if (hour > 12) hour -= 12;
+        if (hour === 0) hour = 12;
+        const minStr = min > 0 ? ` ${min}분` : '';
+        return `${ampm} ${hour}시${minStr}`;
+      }
+    }
+    return String(t);
+  };
+
+  const formatTimeRange = (start, end) => {
+    const sParsed = parseTimeStr(start);
+    if (!sParsed) return '';
+    const cleanTime = (t) => t.replace(' 00분', '').trim();
+    const sClean = cleanTime(sParsed);
+    const eParsed = parseTimeStr(end);
+    if (!eParsed) return sClean;
+    const eClean = cleanTime(eParsed);
+    const sParts = sClean.split(' ');
+    const eParts = eClean.split(' ');
+    if (sParts.length === 2 && eParts.length === 2 && sParts[0] === eParts[0]) {
+      return `${sParts[0]} ${sParts[1]}~${eParts[1]}`;
+    }
+    return `${sClean}~${eClean}`;
+  };
+  const displayTime = formatTimeRange(latest.start || latest.time, latest.end);
+
+  const heroTime = document.getElementById("hero-meeting-time");
+  const heroPlace = document.getElementById("hero-meeting-place");
+  if (heroTime) heroTime.textContent = `${displayDate} ${displayTime}`;
+  if (heroPlace) heroPlace.textContent = latest.place || '';
+
+  const noticeDate = document.getElementById("notice-date");
+  const noticeTime = document.getElementById("notice-time");
+  const noticePlace = document.getElementById("notice-place");
+  const noticeMapIcon = document.getElementById("notice-map-icon");
+  const noticeMemo = document.getElementById("notice-memo");
+
+  if (noticeDate) noticeDate.textContent = displayDate;
+  if (noticeTime) noticeTime.textContent = displayTime;
+  if (noticePlace) noticePlace.textContent = latest.place || '';
+  
+  if (noticeMapIcon && latest.map) {
+    noticeMapIcon.innerHTML = `
+      <a href="${latest.map}" target="_blank" title="지도 보기" style="display:inline-flex; align-items:center; color:#2A6B52; transition:color 0.2s ease;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; cursor:pointer;">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+          <circle cx="12" cy="10" r="3"></circle>
+        </svg>
+      </a>
+    `;
+  } else if (noticeMapIcon) {
+    noticeMapIcon.innerHTML = '';
+  }
+
+  if (noticeMemo) {
+    noticeMemo.innerHTML = latest.notice ? `📌 ${latest.notice}` : '📌 특별한 공지사항이 없습니다.';
+  }
+}
+
+function loadLatestMeeting() {
+  const cached = localStorage.getItem(MEETING_CACHE_KEY);
+  let cachedObj = null;
+
+  // 1. Render from cache immediately
+  if (cached) {
+    try {
+      cachedObj = JSON.parse(cached);
+      if (cachedObj && (cachedObj.date || cachedObj.place)) {
+        renderMeeting(cachedObj);
+      }
+    } catch (e) {
+      console.error("Failed to parse cached meeting", e);
+    }
+  }
+
+  // 2. Always fetch fresh data (same pattern as Topics/Archive)
+  fetch(NAV_API_URL + "?action=getMeetings")
+    .then(res => res.json())
+    .then(data => {
+      if (data && data.length > 0) {
+        const latest = data[data.length - 1];
+        const hasUpdates = JSON.stringify(latest) !== JSON.stringify(cachedObj);
+        if (hasUpdates) {
+          localStorage.setItem(MEETING_CACHE_KEY, JSON.stringify(latest));
+          renderMeeting(latest);
+        }
+      }
+    })
+    .catch(err => {
+      console.error("Failed to load meeting info from spreadsheet", err);
+    });
+}
+
+// Run after DOM is ready
+document.addEventListener("DOMContentLoaded", () => {
+  loadLatestMeeting();
+});
+
+// Reload when admin registers a new meeting
+window.addEventListener("readers-meeting-added", () => {
+  loadLatestMeeting();
+});
+
 })();
