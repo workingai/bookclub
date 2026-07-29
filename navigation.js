@@ -159,6 +159,12 @@ class ReadersNav extends HTMLElement {
             <input type="text" id="admin-notice-input" placeholder="공지할 내용을 입력해 주세요" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px; outline:none; font-family:inherit;">
           </div>
           
+          <!-- Subject -->
+          <div style="margin-bottom:16px;">
+            <label style="display:block; font-size:13px; color:#444; margin-bottom:8px; font-weight:600;">모임 주제를 입력하세요 (예: 히가시노 게이고 특집)</label>
+            <input type="text" id="admin-subject-input" placeholder="모임 주제를 입력해 주세요" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px; outline:none; font-family:inherit;">
+          </div>
+          
           <!-- Place & Map URL -->
           <div style="margin-bottom:24px;">
             <label style="display:block; font-size:13px; color:#444; margin-bottom:8px; font-weight:600;">장소를 등록하세요</label>
@@ -520,6 +526,7 @@ class ReadersNav extends HTMLElement {
     const adminEndHour = shadow.getElementById("admin-end-hour");
     const adminEndMin = shadow.getElementById("admin-end-min");
     const adminNoticeInput = shadow.getElementById("admin-notice-input");
+    const adminSubjectInput = shadow.getElementById("admin-subject-input");
     const adminPlaceInput = shadow.getElementById("admin-place-input");
     const adminMapInput = shadow.getElementById("admin-map-input");
     const adminErrorMsg = shadow.getElementById("admin-modal-error-msg");
@@ -540,6 +547,7 @@ class ReadersNav extends HTMLElement {
       // Reset fields
       adminDateInput.value = "";
       adminNoticeInput.value = "";
+      adminSubjectInput.value = "";
       adminPlaceInput.value = "";
       adminMapInput.value = "";
       adminErrorMsg.style.display = "none";
@@ -557,6 +565,7 @@ class ReadersNav extends HTMLElement {
       const endHourVal = adminEndHour.value;
       const endMinVal = adminEndMin.value;
       const noticeVal = adminNoticeInput.value.trim();
+      const subjectVal = adminSubjectInput.value.trim();
       const placeVal = adminPlaceInput.value.trim();
       const mapVal = adminMapInput.value.trim();
       
@@ -592,6 +601,7 @@ class ReadersNav extends HTMLElement {
             start: startVal,
             end: endVal,
             notice: noticeVal,
+            subject: subjectVal,
             place: placeVal,
             map: mapVal
           })
@@ -1116,8 +1126,10 @@ function renderMeeting(latest) {
 
   const heroTime = document.getElementById("hero-meeting-time");
   const heroPlace = document.getElementById("hero-meeting-place");
+  const heroSubject = document.getElementById("hero-meeting-subject");
   if (heroTime) heroTime.textContent = `${displayDate} ${displayTime}`;
   if (heroPlace) heroPlace.textContent = latest.place || '';
+  if (heroSubject) heroSubject.textContent = latest.subject || '자유 선택 도서 (자유 주제)';
 
   const noticeDate = document.getElementById("notice-date");
   const noticeTime = document.getElementById("notice-time");
