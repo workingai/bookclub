@@ -12,7 +12,8 @@ class ReadersNav extends HTMLElement {
       <div style="background:oklch(0.98 0.008 80 / 0.9);backdrop-filter:blur(8px);border-bottom:1px solid oklch(0.9 0.01 60);width:100%;">
         <div style="max-width:1200px;margin:0 auto;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;box-sizing:border-box;">
           <a href="${prefix}#" style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:24px;letter-spacing:-0.01em;color:inherit;text-decoration:none;">Book Club</a>
-          <div style="display:flex;align-items:center;gap:32px;font-size:14px;font-weight:500;color:oklch(0.4 0.02 60);">
+          
+          <div class="nav-links">
             <a href="${prefix}#notice" style="color:#2A6B52;text-decoration:none;">공지</a>
             <a href="${prefix}#book" style="color:#2A6B52;text-decoration:none;">이번달 책</a>
             <a href="${prefix}#discussion" style="color:#2A6B52;text-decoration:none;">Topic 등록</a>
@@ -22,6 +23,22 @@ class ReadersNav extends HTMLElement {
             <div id="auth-container" style="display:flex;align-items:center;gap:12px;">
               <!-- Will be populated dynamically -->
             </div>
+          </div>
+
+          <button id="hamburger-btn" class="hamburger-btn">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+        </div>
+        
+        <div id="mobile-menu" class="mobile-menu">
+          <a href="${prefix}#notice">공지</a>
+          <a href="${prefix}#book">이번달 책</a>
+          <a href="${prefix}#discussion">Topic 등록</a>
+          <a href="${prefix}#archive">지난 모임</a>
+          <div id="auth-container-mobile" style="display:flex;align-items:center;gap:12px;margin-top:8px;">
+            <!-- Will be populated dynamically -->
           </div>
         </div>
       </div>
@@ -219,6 +236,78 @@ class ReadersNav extends HTMLElement {
       a:hover {
         color: #1E4D3B !important;
       }
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 32px;
+        font-size: 14px;
+        font-weight: 500;
+        color: oklch(0.4 0.02 60);
+      }
+      .hamburger-btn {
+        display: none;
+        flex-direction: column;
+        justify-content: space-between;
+        width: 24px;
+        height: 18px;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        z-index: 1001;
+      }
+      .hamburger-btn span {
+        display: block;
+        width: 100%;
+        height: 2px;
+        background-color: #2A6B52;
+        border-radius: 2px;
+        transition: transform 0.3s ease, opacity 0.3s ease;
+      }
+      .mobile-menu {
+        display: none;
+        width: 100%;
+        background: oklch(0.98 0.008 80 / 0.95);
+        backdrop-filter: blur(12px);
+        border-top: 1px solid oklch(0.9 0.01 60);
+        border-bottom: 1px solid oklch(0.9 0.01 60);
+        box-sizing: border-box;
+        padding: 20px 24px;
+        flex-direction: column;
+        gap: 16px;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease-in-out, opacity 0.2s ease-in-out, padding 0.3s ease-in-out;
+        opacity: 0;
+      }
+      .mobile-menu.active {
+        display: flex;
+        max-height: 300px;
+        opacity: 1;
+      }
+      .mobile-menu a {
+        color: #2A6B52;
+        text-decoration: none;
+        font-size: 15px;
+        font-weight: 600;
+      }
+      .hamburger-btn.active span:nth-child(1) {
+        transform: translateY(8px) rotate(45deg);
+      }
+      .hamburger-btn.active span:nth-child(2) {
+        opacity: 0;
+      }
+      .hamburger-btn.active span:nth-child(3) {
+        transform: translateY(-8px) rotate(-45deg);
+      }
+      @media (max-width: 767px) {
+        .nav-links {
+          display: none;
+        }
+        .hamburger-btn {
+          display: flex;
+        }
+      }
     `;
     shadow.appendChild(style);
 
@@ -241,34 +330,51 @@ class ReadersNav extends HTMLElement {
     const contentInput = shadow.getElementById("topic-content-input");
     const topicErrorMsg = shadow.getElementById("topic-modal-error-msg");
 
+    const authContainerMobile = shadow.getElementById("auth-container-mobile");
+
     // Check login state
     const updateAuthState = () => {
       const savedUser = localStorage.getItem("readers_user_id");
-      if (savedUser) {
-        authContainer.innerHTML = `
-          <span style="color:#2A6B52; font-weight:600; font-size:13px;">${savedUser} 님</span>
-          <button id="logout-btn" style="background:none; border:1px solid #2A6B52; color:#2A6B52; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:600; font-size:12px; font-family:'Noto Sans KR',sans-serif; transition:all 0.2s ease; line-height:1.2;">로그아웃</button>
-        `;
-        // Attach logout listener
-        authContainer.querySelector("#logout-btn").addEventListener("click", () => {
+      const makeAuthHTML = (isMobile) => {
+        if (savedUser) {
+          return `
+            <span style="color:#2A6B52; font-weight:600; font-size:${isMobile ? '14px' : '13px'};">${savedUser} 님</span>
+            <button class="logout-btn" style="background:none; border:1px solid #2A6B52; color:#2A6B52; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:600; font-size:12px; font-family:'Noto Sans KR',sans-serif; transition:all 0.2s ease; line-height:1.2;">로그아웃</button>
+          `;
+        } else {
+          return `
+            <button class="login-btn" style="background:#2A6B52; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:600; font-size:13px; font-family:'Noto Sans KR',sans-serif; transition:background 0.2s ease;">로그인</button>
+          `;
+        }
+      };
+
+      if (authContainer) authContainer.innerHTML = makeAuthHTML(false);
+      if (authContainerMobile) authContainerMobile.innerHTML = makeAuthHTML(true);
+
+      // Attach logout listener
+      shadow.querySelectorAll(".logout-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
           localStorage.removeItem("readers_user_id");
           updateAuthState();
           window.dispatchEvent(new CustomEvent("readers-logout"));
+          hamburgerBtn.classList.remove("active");
+          mobileMenu.classList.remove("active");
         });
-      } else {
-        authContainer.innerHTML = `
-          <button id="login-btn" style="background:#2A6B52; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:600; font-size:13px; font-family:'Noto Sans KR',sans-serif; transition:background 0.2s ease;">로그인</button>
-        `;
-        // Attach login listener
-        authContainer.querySelector("#login-btn").addEventListener("click", () => {
+      });
+
+      // Attach login listener
+      shadow.querySelectorAll(".login-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
           errorMsg.style.display = "none";
           idInput.value = "";
           signupCheck.checked = false;
           codeField.style.display = "none";
           codeInput.value = "";
           loginModal.style.display = "flex";
+          hamburgerBtn.classList.remove("active");
+          mobileMenu.classList.remove("active");
         });
-      }
+      });
     };
 
     // Close Modals
@@ -706,6 +812,33 @@ class ReadersNav extends HTMLElement {
       }
     });
 
+    const hamburgerBtn = shadow.getElementById("hamburger-btn");
+    const mobileMenu = shadow.getElementById("mobile-menu");
+    
+    if (hamburgerBtn && mobileMenu) {
+      hamburgerBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        hamburgerBtn.classList.toggle("active");
+        mobileMenu.classList.toggle("active");
+      });
+      
+      // Close menu when clicking outside
+      document.addEventListener("click", (e) => {
+        if (!this.contains(e.target)) {
+          hamburgerBtn.classList.remove("active");
+          mobileMenu.classList.remove("active");
+        }
+      });
+      
+      // Close menu when clicking any link inside the mobile menu
+      mobileMenu.querySelectorAll("a").forEach(link => {
+        link.addEventListener("click", () => {
+          hamburgerBtn.classList.remove("active");
+          mobileMenu.classList.remove("active");
+        });
+      });
+    }
+
     updateAuthState();
   }
 }
@@ -722,8 +855,69 @@ class ReadersArchive extends HTMLElement {
           display: block;
           width: 100%;
         }
+        #archive-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 24px;
+          align-items: stretch;
+        }
+        .archive-item {
+          display: flex;
+          flex-direction: column;
+          opacity: 0;
+          transform: translateY(15px);
+          transition: opacity 0.5s ease, transform 0.5s ease;
+          width: 100%;
+        }
+        .book-cover-wrap {
+          width: 100%;
+          aspect-ratio: 280 / 410;
+          border-radius: 8px;
+          overflow: hidden;
+          margin-bottom: 12px;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+          background: #fcfcfc;
+        }
+        .book-title {
+          font-size: 14px;
+          font-weight: 600;
+          margin-bottom: 4px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          font-family: 'Noto Sans KR', sans-serif;
+          text-align: left;
+          width: 100%;
+        }
+        .book-meta {
+          font-size: 12px;
+          color: oklch(0.5 0.02 60);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-family: 'Noto Sans KR', sans-serif;
+          width: 100%;
+        }
+        @media (max-width: 1024px) {
+          #archive-grid {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+          }
+        }
+        @media (max-width: 767px) {
+          #archive-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+          }
+          .book-title {
+            font-size: 13px;
+          }
+          .book-meta {
+            font-size: 11px;
+          }
+        }
       </style>
-      <div id="archive-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;align-items:stretch;">
+      <div id="archive-grid">
         <div style="grid-column: span 4; text-align: center; color: oklch(0.5 0.02 60); font-size: 14px; padding: 40px 0;">도서 목록을 불러오는 중입니다...</div>
       </div>
       <div style="text-align:center;margin-top:48px;">
@@ -767,18 +961,14 @@ class ReadersArchive extends HTMLElement {
         }
 
         const item = document.createElement("div");
-        item.style.display = "flex";
-        item.style.flexDirection = "column";
-        item.style.opacity = "0";
-        item.style.transform = "translateY(15px)";
-        item.style.transition = "opacity 0.5s ease, transform 0.5s ease";
+        item.className = "archive-item";
         
         item.innerHTML = `
-          <div style="width:280px; height:410px; border-radius:8px; overflow:hidden; margin-bottom:12px; box-shadow:0 8px 24px rgba(0,0,0,0.06); background:#fcfcfc; flex-shrink:0; margin-left:auto; margin-right:auto;">
+          <div class="book-cover-wrap">
             <img src="${book.url || ''}" alt="${book.name || ''}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\' viewBox=\\'0 0 100 100\\'><rect width=\\'100\\' height=\\'100\\' fill=\\'%23efefef\\'/><text x=\\'50%\\' y=\\'50%\\' dominant-baseline=\\'middle\\' text-anchor=\\'middle\\' font-size=\\'12\\' fill=\\'%23999\\'>이미지 없음</text></svg>'">
           </div>
-          <div style="font-size:14px; font-weight:600; margin-bottom:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:'Noto Sans KR',sans-serif; text-align:left; width:280px; margin-left:auto; margin-right:auto;">${book.name || '제목 없음'}</div>
-          <div style="font-size:12px; color:oklch(0.5 0.02 60); display:flex; justify-content:space-between; align-items:center; font-family:'Noto Sans KR',sans-serif; width:280px; margin-left:auto; margin-right:auto;">
+          <div class="book-title">${book.name || '제목 없음'}</div>
+          <div class="book-meta">
             <span>${monthString}</span>
             <span style="font-size:11px; opacity:0.8;">${book.author || ''}</span>
           </div>
