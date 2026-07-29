@@ -216,6 +216,15 @@
       <div style="max-width:640px;margin:0;">
         <div style="font-family:'Noto Serif KR',serif;font-size:32px;font-weight:700;color:oklch(0.98 0.01 60);margin-bottom:14px;">다음 모임 함께 읽을 책을 추천해 주세요!</div>
         <div style="font-size:16px;line-height:1.8;color:oklch(0.9 0.02 60);margin-bottom:32px;">다음 모임에서 멤버들과 함께 읽고 이야기 나누고 싶은 책이 있다면 자유롭게 추천해 주세요. <br>추천된 도서 목록 중에서 함께 이야기 나눌 책이 선정됩니다.</div>
+        
+        <!-- Recommended Books Thumbnails -->
+        <div id="recommended-thumbnails-container" style="margin-bottom:32px; display:none;">
+          <div style="font-size:13px; font-weight:700; color:oklch(0.9 0.02 60); letter-spacing:0.05em; margin-bottom:14px; opacity:0.8;">현재 추천된 책들</div>
+          <div id="recommended-thumbnails-list" style="display:flex; gap:16px; flex-wrap:wrap; align-items:center;">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
         <a href="#" onclick="event.preventDefault(); window.dispatchEvent(new CustomEvent('open-book-modal'))" style="display:inline-block;background:oklch(0.98 0.01 60);color:#2A6B52;padding:16px 36px;border-radius:8px;font-weight:700;font-size:16px;">책 추천하기 →</a>
       </div>
     </div>
@@ -279,6 +288,70 @@ document.addEventListener('click', function(e) {
     }
   }
 });
+
+function loadRecommendedBooks() {
+  const API_URL = "https://script.google.com/macros/s/AKfycbxqJukWhIxtRm-XmZLZUNdfQLu0vfL6QnAwG_K4uCubRVqrWC-9dOpNAMYuvxJEUy44Kg/exec?action=getBooks";
+  fetch(API_URL)
+    .then(res => res.json())
+    .then(books => {
+      const container = document.getElementById("recommended-thumbnails-container");
+      const list = document.getElementById("recommended-thumbnails-list");
+      if (!container || !list) return;
+      
+      if (books && books.length > 0) {
+        list.innerHTML = "";
+        // Show at most 5 latest recommended books
+        const latestBooks = books.slice(-5).reverse();
+        
+        latestBooks.forEach(book => {
+          const item = document.createElement("div");
+          item.style.position = "relative";
+          item.style.width = "90px";
+          item.style.height = "132px";
+          item.style.borderRadius = "6px";
+          item.style.overflow = "hidden";
+          item.style.boxShadow = "0 6px 12px rgba(0,0,0,0.25)";
+          item.style.transition = "transform 0.2s ease, box-shadow 0.2s ease";
+          item.style.cursor = "pointer";
+          item.style.background = "rgba(255,255,255,0.1)";
+          item.title = book.name || "추천 도서";
+          
+          item.addEventListener("mouseenter", () => {
+            item.style.transform = "translateY(-4px)";
+            item.style.boxShadow = "0 10px 18px rgba(0,0,0,0.35)";
+          });
+          item.addEventListener("mouseleave", () => {
+            item.style.transform = "none";
+            item.style.boxShadow = "0 6px 12px rgba(0,0,0,0.25)";
+          });
+
+          // Inline SVG placeholder for books without image URL
+          const defaultImage = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='90' height='132' viewBox='0 0 90 132'><rect width='90' height='132' fill='%231a4735'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='10' fill='%23d0e2db' font-weight='bold' font-family='sans-serif'>${book.name ? book.name.slice(0,5) : '추천도서'}</text></svg>`;
+          
+          item.innerHTML = `
+            <img src="${book.url || ''}" alt="${book.name || ''}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.src=\`${defaultImage}\`"/>
+          `;
+          list.appendChild(item);
+        });
+        container.style.display = "block";
+      } else {
+        container.style.display = "none";
+      }
+    })
+    .catch(err => {
+      console.error("Failed to load recommended books", err);
+    });
+}
+
+// Load on DOM ready
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", loadRecommendedBooks);
+} else {
+  loadRecommendedBooks();
+}
+
+// Reload when a book is added
+window.addEventListener("readers-book-added", loadRecommendedBooks);
 </script>
 </x-dc>
 </body>
