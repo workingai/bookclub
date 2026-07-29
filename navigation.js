@@ -856,10 +856,11 @@ class ReadersArchive extends HTMLElement {
           width: 100%;
         }
         #archive-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 24px;
-          align-items: stretch;
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 32px 24px;
+          width: 100%;
         }
         .archive-item {
           display: flex;
@@ -867,11 +868,11 @@ class ReadersArchive extends HTMLElement {
           opacity: 0;
           transform: translateY(15px);
           transition: opacity 0.5s ease, transform 0.5s ease;
-          width: 100%;
+          width: 280px;
         }
         .book-cover-wrap {
-          width: 100%;
-          aspect-ratio: 280 / 410;
+          width: 280px;
+          height: 410px;
           border-radius: 8px;
           overflow: hidden;
           margin-bottom: 12px;
@@ -887,7 +888,7 @@ class ReadersArchive extends HTMLElement {
           white-space: nowrap;
           font-family: 'Noto Sans KR', sans-serif;
           text-align: left;
-          width: 100%;
+          width: 280px;
         }
         .book-meta {
           font-size: 12px;
@@ -896,19 +897,9 @@ class ReadersArchive extends HTMLElement {
           justify-content: space-between;
           align-items: center;
           font-family: 'Noto Sans KR', sans-serif;
-          width: 100%;
-        }
-        @media (max-width: 1024px) {
-          #archive-grid {
-            grid-template-columns: repeat(3, 1fr);
-            gap: 16px;
-          }
+          width: 280px;
         }
         @media (max-width: 767px) {
-          #archive-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-          }
           .book-title {
             font-size: 13px;
           }
