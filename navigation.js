@@ -868,11 +868,11 @@ class ReadersArchive extends HTMLElement {
           opacity: 0;
           transform: translateY(15px);
           transition: opacity 0.5s ease, transform 0.5s ease;
-          width: 280px;
+          width: 260px;
         }
         .book-cover-wrap {
-          width: 280px;
-          height: 410px;
+          width: 260px;
+          height: 380px;
           border-radius: 8px;
           overflow: hidden;
           margin-bottom: 12px;
@@ -888,7 +888,7 @@ class ReadersArchive extends HTMLElement {
           white-space: nowrap;
           font-family: 'Noto Sans KR', sans-serif;
           text-align: left;
-          width: 280px;
+          width: 260px;
         }
         .book-meta {
           font-size: 12px;
@@ -897,7 +897,7 @@ class ReadersArchive extends HTMLElement {
           justify-content: space-between;
           align-items: center;
           font-family: 'Noto Sans KR', sans-serif;
-          width: 280px;
+          width: 260px;
         }
         @media (max-width: 767px) {
           .book-title {
