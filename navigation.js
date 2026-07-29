@@ -201,9 +201,10 @@ class ReadersNav extends HTMLElement {
     style.textContent = `
       :host {
         display: block;
-        position: sticky;
+        position: fixed;
         top: 0;
-        z-index: 50;
+        left: 0;
+        z-index: 1000;
         width: 100%;
       }
       a {
