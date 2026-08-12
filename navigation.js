@@ -1,5 +1,5 @@
 (() => {
-const NAV_API_URL = "https://script.google.com/macros/s/AKfycbxqJukWhIxtRm-XmZLZUNdfQLu0vfL6QnAwG_K4uCubRVqrWC-9dOpNAMYuvxJEUy44Kg/exec";
+const NAV_API_URL = "https://script.google.com/macros/s/AKfycbxAOsg5g3sr2w4HrbpSMXc51hbC96h0cYnzoZoEq3v4-4lOjrWi2DnMuMY_CSG82XfNJA/exec";
 
 class ReadersNav extends HTMLElement {
   connectedCallback() {
@@ -1340,17 +1340,42 @@ function renderMeeting(latest) {
   }
 }
 
+function renderMeetingError(msg) {
+  const heroTime = document.getElementById("hero-meeting-time");
+  const heroPlace = document.getElementById("hero-meeting-place");
+  const heroSubject = document.getElementById("hero-meeting-subject");
+  if (heroTime) heroTime.textContent = msg;
+  if (heroPlace) heroPlace.textContent = "-";
+  if (heroSubject) heroSubject.textContent = "-";
+
+  const noticeDate = document.getElementById("notice-date");
+  const noticeTime = document.getElementById("notice-time");
+  const noticePlace = document.getElementById("notice-place");
+  const noticeMemo = document.getElementById("notice-memo");
+
+  if (noticeDate) noticeDate.textContent = msg;
+  if (noticeTime) noticeTime.textContent = "-";
+  if (noticePlace) noticePlace.textContent = "-";
+  if (noticeMemo) noticeMemo.innerHTML = "📌 구글 Apps Script 연동 상태를 확인해 주세요.";
+}
+
 function loadLatestMeeting() {
   fetch(NAV_API_URL + "?action=getMeetings")
-    .then(function(res) { return res.json(); })
+    .then(function(res) {
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      return res.json();
+    })
     .then(function(data) {
       if (data && data.length > 0) {
         var latest = data[data.length - 1];
         renderMeeting(latest);
+      } else {
+        renderMeetingError("등록된 모임이 없습니다");
       }
     })
     .catch(function(err) {
       console.error("Failed to load meeting info:", err);
+      renderMeetingError("연동 실패 (구글시트 Apps Script URL 확인 필요)");
     });
 }
 
