@@ -194,22 +194,22 @@ class ReadersNav extends HTMLElement {
         <div style="background:white; padding:32px; border-radius:12px; width:420px; box-shadow:0 20px 40px rgba(0,0,0,0.2); box-sizing:border-box; font-family:'Noto Sans KR',sans-serif; position:relative; color: #333;">
           <button id="book-modal-close-btn" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:22px; cursor:pointer; color:#999; line-height:1;">&times;</button>
           
-          <h3 style="margin:0 0 4px; font-size:18px; font-weight:700; color:#2A6B52;">책 추천하기</h3>
-          <div id="book-user-display" style="font-size:13px; color:#666; margin-bottom:24px; font-weight:500;">추천자: 님</div>
+          <h3 style="margin:0 0 4px; font-size:18px; font-weight:700; color:#2A6B52;">작품/주제 등록하기</h3>
+          <div id="book-user-display" style="font-size:13px; color:#666; margin-bottom:24px; font-weight:500;">등록자: 님</div>
           
           <div style="margin-bottom:20px;">
-            <label style="display:block; font-size:13px; color:#444; margin-bottom:8px; font-weight:600;">추천하실 책은 무엇인가요?</label>
-            <input type="text" id="book-name-input" placeholder="책 제목을 입력해 주세요" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px; outline:none; font-family:inherit;">
+            <label style="display:block; font-size:13px; color:#444; margin-bottom:8px; font-weight:600;">추천하실 작품이나 주제는 무엇인가요?</label>
+            <input type="text" id="book-name-input" placeholder="작품명 또는 주제를 입력해 주세요" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px; outline:none; font-family:inherit;">
           </div>
           
           <div style="margin-bottom:24px;">
-            <label style="display:block; font-size:13px; color:#444; margin-bottom:8px; font-weight:600;">책 이미지 링크를 알면 입력해주세요 (yes24 기준)</label>
+            <label style="display:block; font-size:13px; color:#444; margin-bottom:8px; font-weight:600;">작품 이미지 링크를 알면 입력해주세요 (yes24 등 기준)</label>
             <input type="url" id="book-url-input" placeholder="http:// 또는 https://로 시작하는 이미지 주소" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px; outline:none; font-family:inherit;">
           </div>
           
           <div id="book-modal-error-msg" style="color:#d93025; font-size:12px; margin-bottom:16px; display:none; line-height:1.4;"></div>
           
-          <button id="book-modal-submit-btn" style="width:100%; background:#2A6B52; color:white; border:none; padding:12px; border-radius:6px; font-weight:600; font-size:14px; cursor:pointer; transition:background 0.2s ease;">추천 완료</button>
+          <button id="book-modal-submit-btn" style="width:100%; background:#2A6B52; color:white; border:none; padding:12px; border-radius:6px; font-weight:600; font-size:14px; cursor:pointer; transition:background 0.2s ease;">등록하기</button>
         </div>
       </div>
     `;
@@ -680,7 +680,7 @@ class ReadersNav extends HTMLElement {
     });
 
     const openBookModal = (username) => {
-      bookUserDisplay.textContent = `추천자: ${username} 님`;
+      bookUserDisplay.textContent = `등록자: ${username} 님`;
       bookNameInput.value = "";
       bookUrlInput.value = "";
       bookErrorMsg.style.display = "none";
@@ -690,7 +690,7 @@ class ReadersNav extends HTMLElement {
     window.addEventListener("open-book-modal", () => {
       const savedUser = localStorage.getItem("readers_user_id");
       if (!savedUser) {
-        alert("책을 추천하려면 먼저 로그인해 주세요.");
+        alert("작품/주제를 등록하려면 먼저 로그인해 주세요.");
         const loginModal = shadow.getElementById("login-modal");
         if (loginModal) loginModal.style.display = "flex";
         return;
@@ -706,7 +706,7 @@ class ReadersNav extends HTMLElement {
       bookErrorMsg.style.display = "none";
 
       if (!nameVal) {
-        bookErrorMsg.textContent = "추천할 책 제목을 입력해 주세요.";
+        bookErrorMsg.textContent = "추천할 작품명 또는 주제를 입력해 주세요.";
         bookErrorMsg.style.display = "block";
         return;
       }
@@ -733,7 +733,7 @@ class ReadersNav extends HTMLElement {
           throw new Error(result.error || "등록에 실패했습니다.");
         }
 
-        alert("책 추천이 성공적으로 등록되었습니다!");
+        alert("성공적으로 등록되었습니다!");
         bookModal.style.display = "none";
         
         // Notify pages to reload books list
@@ -743,7 +743,7 @@ class ReadersNav extends HTMLElement {
         bookErrorMsg.style.display = "block";
       } finally {
         bookSubmitBtn.disabled = false;
-        bookSubmitBtn.textContent = "추천 완료";
+        bookSubmitBtn.textContent = "등록하기";
       }
     });
 
