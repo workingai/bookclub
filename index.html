@@ -290,9 +290,12 @@ document.addEventListener('click', function(e) {
 });
 
 function loadRecommendedBooks() {
-  const API_URL = "https://script.google.com/macros/s/AKfycbxqJukWhIxtRm-XmZLZUNdfQLu0vfL6QnAwG_K4uCubRVqrWC-9dOpNAMYuvxJEUy44Kg/exec?action=getBooks";
+  const API_URL = "https://script.google.com/macros/s/AKfycbxAOsg5g3sr2w4HrbpSMXc51hbC96h0cYnzoZoEq3v4-4lOjrWi2DnMuMY_CSG82XfNJA/exec?action=getBooks";
   fetch(API_URL)
-    .then(res => res.json())
+    .then(res => {
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      return res.json();
+    })
     .then(books => {
       const container = document.getElementById("recommended-thumbnails-container");
       const list = document.getElementById("recommended-thumbnails-list");
