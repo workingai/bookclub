@@ -79,12 +79,12 @@ class ReadersNav extends HTMLElement {
           <div id="topic-user-display" style="font-size:13px; color:#666; margin-bottom:24px; font-weight:500;">등록자: 님</div>
           
            <div style="margin-bottom:20px;">
-             <label style="display:block; font-size:13px; color:#444; margin-bottom:8px; font-weight:600;">어떤 책에 대한 토픽인가요?</label>
-             <input type="text" id="topic-book-input" placeholder="책 제목을 입력해 주세요" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px; outline:none; font-family:inherit;">
+             <label style="display:block; font-size:13px; color:#444; margin-bottom:8px; font-weight:600;">어떤 작품, 이슈에 대한 토픽인가요?</label>
+             <input type="text" id="topic-book-input" placeholder="작품명 또는 이슈를 입력해 주세요" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px; outline:none; font-family:inherit;">
            </div>
           
           <div style="margin-bottom:24px;">
-            <label style="display:block; font-size:13px; color:#444; margin-bottom:8px; font-weight:600;">이 책에 대해 함께 이야기하고 싶은 질문은 무엇인가요?</label>
+            <label style="display:block; font-size:13px; color:#444; margin-bottom:8px; font-weight:600;">이 Topic에 대해 함께 이야기 나누고 싶은 내용을 알려 주세요</label>
             <textarea id="topic-content-input" placeholder="이야기 나누고 싶은 질문이나 토픽 내용을 입력해 주세요." style="width:100%; height:120px; padding:12px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px; outline:none; font-family:inherit; resize: none; line-height:1.5;"></textarea>
           </div>
           
@@ -501,7 +501,7 @@ class ReadersNav extends HTMLElement {
       topicErrorMsg.style.display = "none";
 
       if (!bookVal) {
-        topicErrorMsg.textContent = "책 제목을 입력해 주세요.";
+        topicErrorMsg.textContent = "작품명 또는 이슈를 입력해 주세요.";
         topicErrorMsg.style.display = "block";
         return;
       }
