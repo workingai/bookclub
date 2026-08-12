@@ -1359,7 +1359,57 @@ function renderMeetingError(msg) {
   if (noticeMemo) noticeMemo.innerHTML = "📌 구글 Apps Script 연동 상태를 확인해 주세요.";
 }
 
-function loadLatestMeeting() {
+const MEETING_CACHE_KEY = "readers_meeting_cache";
+
+function isMeetingCacheValid(cachedMeeting) {
+  if (!cachedMeeting || !cachedMeeting.date) return false;
+
+  const dateStr = String(cachedMeeting.date).trim();
+  let cutoffDate = null;
+
+  if (dateStr.includes('-') || dateStr.includes('/')) {
+    const parts = dateStr.split(/[-/]/);
+    if (parts.length >= 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2].split('T')[0].split(' ')[0], 10);
+      cutoffDate = new Date(year, month, day, 18, 0, 0); // 18:00 (6 PM) on meeting day
+    }
+  }
+
+  if (!cutoffDate || isNaN(cutoffDate.getTime())) {
+    cutoffDate = new Date(cachedMeeting.date);
+    if (isNaN(cutoffDate.getTime())) return false;
+    cutoffDate.setHours(18, 0, 0, 0);
+  }
+
+  const now = new Date();
+  return now.getTime() <= cutoffDate.getTime();
+}
+
+function loadLatestMeeting(forceRefresh) {
+  let cachedData = null;
+  const cachedStr = localStorage.getItem(MEETING_CACHE_KEY);
+
+  if (cachedStr) {
+    try {
+      cachedData = JSON.parse(cachedStr);
+    } catch(e) {
+      console.error("Failed to parse meeting cache", e);
+    }
+  }
+
+  // Use cache immediately if valid and not forcing refresh
+  if (!forceRefresh && cachedData && cachedData.meeting && isMeetingCacheValid(cachedData.meeting)) {
+    renderMeeting(cachedData.meeting);
+    return;
+  }
+
+  // Render existing cache immediately to prevent loading UI lag while fetching fresh data
+  if (cachedData && cachedData.meeting) {
+    renderMeeting(cachedData.meeting);
+  }
+
   fetch(NAV_API_URL + "?action=getMeetings")
     .then(function(res) {
       if (!res.ok) throw new Error("HTTP " + res.status);
@@ -1368,26 +1418,34 @@ function loadLatestMeeting() {
     .then(function(data) {
       if (data && data.length > 0) {
         var latest = data[data.length - 1];
+        localStorage.setItem(MEETING_CACHE_KEY, JSON.stringify({
+          meeting: latest,
+          timestamp: Date.now()
+        }));
         renderMeeting(latest);
       } else {
-        renderMeetingError("등록된 모임이 없습니다");
+        if (!cachedData || !cachedData.meeting) {
+          renderMeetingError("등록된 모임이 없습니다");
+        }
       }
     })
     .catch(function(err) {
       console.error("Failed to load meeting info:", err);
-      renderMeetingError("연동 실패 (구글시트 Apps Script URL 확인 필요)");
+      if (!cachedData || !cachedData.meeting) {
+        renderMeetingError("연동 실패 (구글시트 Apps Script URL 확인 필요)");
+      }
     });
 }
 
 // Run after DOM is ready
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", loadLatestMeeting);
+  document.addEventListener("DOMContentLoaded", function() { loadLatestMeeting(false); });
 } else {
-  loadLatestMeeting();
+  loadLatestMeeting(false);
 }
 
 // Reload when admin registers a new meeting
-window.addEventListener("readers-meeting-added", loadLatestMeeting);
+window.addEventListener("readers-meeting-added", function() { loadLatestMeeting(true); });
 
 })();
 
