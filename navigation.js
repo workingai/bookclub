@@ -1453,10 +1453,42 @@ function loadLatestMeeting(forceRefresh) {
     });
 }
 
+let isRestoringMeeting = false;
+function setupMeetingObserver() {
+  if (window.__meetingObserverActive) return;
+  window.__meetingObserverActive = true;
+
+  const observer = new MutationObserver(function() {
+    if (isRestoringMeeting) return;
+    const heroTime = document.getElementById("hero-meeting-time");
+    const noticeDate = document.getElementById("notice-date");
+
+    if ((heroTime && heroTime.textContent === "로딩 중...") || (noticeDate && noticeDate.textContent === "로딩 중...")) {
+      const cachedStr = localStorage.getItem(MEETING_CACHE_KEY);
+      if (cachedStr) {
+        try {
+          const cachedData = JSON.parse(cachedStr);
+          if (cachedData && cachedData.meeting && (cachedData.meeting.date || cachedData.meeting.subject)) {
+            isRestoringMeeting = true;
+            renderMeeting(cachedData.meeting);
+            isRestoringMeeting = false;
+          }
+        } catch(e) {}
+      }
+    }
+  });
+
+  observer.observe(document.documentElement, { childList: true, subtree: true, characterData: true });
+}
+
 // Run after DOM is ready
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", function() { loadLatestMeeting(false); });
+  document.addEventListener("DOMContentLoaded", function() {
+    setupMeetingObserver();
+    loadLatestMeeting(false);
+  });
 } else {
+  setupMeetingObserver();
   loadLatestMeeting(false);
 }
 
