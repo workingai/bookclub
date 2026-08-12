@@ -1146,15 +1146,8 @@ class ReadersTopics extends HTMLElement {
       fetch(NAV_API_URL + "?action=getTopics")
         .then(res => res.json())
         .then(data => {
+          // Reversing the array places the latest registered topics at the top
           data.reverse();
-          data.sort((a, b) => {
-            const valA = Number(String(a.Date || a.date || '').replace(/[^0-9]/g, '')) || 0;
-            const valB = Number(String(b.Date || b.date || '').replace(/[^0-9]/g, '')) || 0;
-            if (valB !== valA) {
-              return valB - valA;
-            }
-            return 0;
-          });
 
           const hasUpdates = JSON.stringify(data) !== JSON.stringify(topicsData);
           if (hasUpdates) {
