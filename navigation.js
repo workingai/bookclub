@@ -90,7 +90,7 @@ class ReadersNav extends HTMLElement {
           
           <div id="topic-modal-error-msg" style="color:#d93025; font-size:12px; margin-bottom:16px; display:none; line-height:1.4;"></div>
           
-          <button id="topic-modal-submit-btn" style="width:100%; background:#2A6B52; color:white; border:none; padding:12px; border-radius:6px; font-weight:600; font-size:14px; cursor:pointer; transition:background 0.2s ease;">등록 완료</button>
+          <button id="topic-modal-submit-btn" style="width:100%; background:#2A6B52; color:white; border:none; padding:12px; border-radius:6px; font-weight:600; font-size:14px; cursor:pointer; transition:background 0.2s ease;">등록하기</button>
         </div>
       </div>
 
@@ -542,6 +542,7 @@ class ReadersNav extends HTMLElement {
 
         topicModal.style.display = "none";
         alert("Topic이 성공적으로 등록되었습니다!");
+        location.reload();
         
         // Notify other components (like ReadersTopics) to refresh list
         window.dispatchEvent(new CustomEvent("readers-topic-added", { detail: optimisticTopic }));
@@ -550,7 +551,7 @@ class ReadersNav extends HTMLElement {
         topicErrorMsg.style.display = "block";
       } finally {
         topicSubmitBtn.disabled = false;
-        topicSubmitBtn.textContent = "등록 완료";
+        topicSubmitBtn.textContent = "등록하기";
       }
     });
 
@@ -1145,10 +1146,14 @@ class ReadersTopics extends HTMLElement {
       fetch(NAV_API_URL + "?action=getTopics")
         .then(res => res.json())
         .then(data => {
+          data.reverse();
           data.sort((a, b) => {
-            const valA = String(a.Date || a.date || '').replace(/[^0-9]/g, '');
-            const valB = String(b.Date || b.date || '').replace(/[^0-9]/g, '');
-            return Number(valB) - Number(valA);
+            const valA = Number(String(a.Date || a.date || '').replace(/[^0-9]/g, '')) || 0;
+            const valB = Number(String(b.Date || b.date || '').replace(/[^0-9]/g, '')) || 0;
+            if (valB !== valA) {
+              return valB - valA;
+            }
+            return 0;
           });
 
           const hasUpdates = JSON.stringify(data) !== JSON.stringify(topicsData);
