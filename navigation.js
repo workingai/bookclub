@@ -79,13 +79,8 @@ class ReadersNav extends HTMLElement {
           <div id="topic-user-display" style="font-size:13px; color:#666; margin-bottom:24px; font-weight:500;">등록자: 님</div>
           
            <div style="margin-bottom:20px;">
-             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-               <label style="font-size:13px; color:#444; font-weight:600; margin:0;">어떤 책에 대한 토픽인가요?</label>
-               <button id="topic-to-book-btn" style="background:#E8F0ED; color:#2A6B52; border:none; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:700; cursor:pointer; font-family:inherit; transition:background 0.2s ease;">책추천</button>
-             </div>
-             <select id="topic-book-select" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px; outline:none; font-family:inherit; background: white; cursor: pointer;">
-               <!-- Loaded dynamically -->
-             </select>
+             <label style="display:block; font-size:13px; color:#444; margin-bottom:8px; font-weight:600;">어떤 책에 대한 토픽인가요?</label>
+             <input type="text" id="topic-book-input" placeholder="책 제목을 입력해 주세요" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px; outline:none; font-family:inherit;">
            </div>
           
           <div style="margin-bottom:24px;">
@@ -326,7 +321,7 @@ class ReadersNav extends HTMLElement {
     const topicCloseBtn = shadow.getElementById("topic-modal-close-btn");
     const topicSubmitBtn = shadow.getElementById("topic-modal-submit-btn");
     const topicUserDisplay = shadow.getElementById("topic-user-display");
-    const bookSelect = shadow.getElementById("topic-book-select");
+    const bookInput = shadow.getElementById("topic-book-input");
     const contentInput = shadow.getElementById("topic-content-input");
     const topicErrorMsg = shadow.getElementById("topic-modal-error-msg");
 
@@ -456,83 +451,22 @@ class ReadersNav extends HTMLElement {
       }
     });
 
-    // Prefetch book list on page load
-    let cachedBooks = [];
-    const prefetchBooks = () => {
-      fetch(NAV_API_URL + "?action=getBooks")
-        .then(res => res.json())
-        .then(books => {
-          cachedBooks = books;
-        })
-        .catch(err => {
-          console.error("Failed to prefetch books list", err);
-        });
-    };
-    prefetchBooks();
-
-    // Re-prefetch when a book is added
-    window.addEventListener("readers-book-added", () => {
-      prefetchBooks();
-    });
-
-    // Handle "책추천" transition button
+    // Handle "책추천" transition button if exists
     const topicToBookBtn = shadow.getElementById("topic-to-book-btn");
-    topicToBookBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      topicModal.style.display = "none";
-      window.dispatchEvent(new CustomEvent("open-book-modal"));
-    });
+    if (topicToBookBtn) {
+      topicToBookBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        topicModal.style.display = "none";
+        window.dispatchEvent(new CustomEvent("open-book-modal"));
+      });
+    }
 
     // openTopicModal implementation
     const openTopicModal = (username) => {
       topicUserDisplay.textContent = `등록자: ${username} 님`;
+      bookInput.value = "";
       contentInput.value = "";
       topicErrorMsg.style.display = "none";
-
-      // Set default placeholder option
-      bookSelect.innerHTML = `<option value="" disabled selected>책을 선택해 주세요</option>`;
-      
-      if (cachedBooks && cachedBooks.length > 0) {
-        cachedBooks.forEach(b => {
-          if (b.name) {
-            const opt = document.createElement("option");
-            opt.value = b.name;
-            opt.textContent = b.name;
-            bookSelect.appendChild(opt);
-          }
-        });
-      } else {
-        // Fetch on-demand if cache is empty
-        fetch(NAV_API_URL + "?action=getBooks")
-          .then(res => res.json())
-          .then(books => {
-            cachedBooks = books;
-            bookSelect.innerHTML = `<option value="" disabled selected>책을 선택해 주세요</option>`;
-            if (books.length === 0) {
-              const opt = document.createElement("option");
-              opt.value = "자유 선택 도서";
-              opt.textContent = "자유 선택 도서";
-              bookSelect.appendChild(opt);
-            } else {
-              books.forEach(b => {
-                if (b.name) {
-                  const opt = document.createElement("option");
-                  opt.value = b.name;
-                  opt.textContent = b.name;
-                  bookSelect.appendChild(opt);
-                }
-              });
-            }
-          })
-          .catch(err => {
-            console.error("Failed to load books for select on-demand", err);
-            const opt = document.createElement("option");
-            opt.value = "자유 선택 도서";
-            opt.textContent = "자유 선택 도서";
-            bookSelect.appendChild(opt);
-          });
-      }
-
       topicModal.style.display = "flex";
     };
 
@@ -562,12 +496,12 @@ class ReadersNav extends HTMLElement {
         return;
       }
 
-      const bookVal = bookSelect.value;
+      const bookVal = bookInput.value.trim();
       const topicVal = contentInput.value.trim();
       topicErrorMsg.style.display = "none";
 
       if (!bookVal) {
-        topicErrorMsg.textContent = "도서를 선택해 주세요.";
+        topicErrorMsg.textContent = "책 제목을 입력해 주세요.";
         topicErrorMsg.style.display = "block";
         return;
       }
