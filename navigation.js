@@ -724,8 +724,10 @@ class ReadersNav extends HTMLElement {
           body: JSON.stringify({
             action: "addBook",
             id: savedUser,
+            recommender: savedUser,
             name: nameVal,
-            url: urlVal
+            url: urlVal,
+            date: new Date().toISOString().slice(0, 19).replace('T', ' ')
           })
         });
         const result = await res.json();
@@ -735,6 +737,7 @@ class ReadersNav extends HTMLElement {
 
         alert("성공적으로 등록되었습니다!");
         bookModal.style.display = "none";
+        location.reload();
         
         // Notify pages to reload books list
         window.dispatchEvent(new CustomEvent("readers-book-added"));
@@ -924,7 +927,11 @@ class ReadersArchive extends HTMLElement {
     const cachedData = localStorage.getItem(CACHE_KEY);
     if (cachedData) {
       try {
-        archiveData = JSON.parse(cachedData);
+        const parsed = JSON.parse(cachedData);
+        if (parsed.length > 0 && parsed[0].name === "공정하다는 착각") {
+          parsed.reverse();
+        }
+        archiveData = parsed;
         renderArchive();
       } catch (e) {
         console.error("Failed to load archive cache", e);
@@ -943,11 +950,8 @@ class ReadersArchive extends HTMLElement {
         if (data.error) {
           throw new Error(data.error);
         }
-        data.sort((a, b) => {
-          const dateA = new Date(a.date || a.data);
-          const dateB = new Date(b.date || b.data);
-          return dateB - dateA;
-        });
+        // Reverse array so latest meetings (e.g. 곽민수의 다시 만난 고대문명(이집트)) appear first
+        data.reverse();
 
         // Only update DOM and cache if the data is actually different (new items added/edited)
         const hasUpdates = JSON.stringify(data) !== JSON.stringify(archiveData);
