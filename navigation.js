@@ -1362,25 +1362,37 @@ function renderMeetingError(msg) {
 const MEETING_CACHE_KEY = "readers_meeting_cache";
 
 function isMeetingCacheValid(cachedMeeting) {
-  if (!cachedMeeting || !cachedMeeting.date) return false;
+  if (!cachedMeeting || typeof cachedMeeting !== 'object') return false;
+  if (!cachedMeeting.date && !cachedMeeting.subject) return false;
 
-  const dateStr = String(cachedMeeting.date).trim();
+  const dateRaw = String(cachedMeeting.date || '').trim();
+  if (!dateRaw) return true; // If no date field but has subject/place, consider valid
+
   let cutoffDate = null;
 
-  if (dateStr.includes('-') || dateStr.includes('/')) {
-    const parts = dateStr.split(/[-/]/);
-    if (parts.length >= 3) {
-      const year = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1;
-      const day = parseInt(parts[2].split('T')[0].split(' ')[0], 10);
+  // Clean date string: replace '.', '년', '월', '일' with '-'
+  const cleanDate = dateRaw.replace(/[.\s년월일]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+  const parts = cleanDate.split('-');
+
+  if (parts.length >= 3) {
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1;
+    const day = parseInt(parts[2], 10);
+    if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
       cutoffDate = new Date(year, month, day, 18, 0, 0); // 18:00 (6 PM) on meeting day
     }
   }
 
   if (!cutoffDate || isNaN(cutoffDate.getTime())) {
-    cutoffDate = new Date(cachedMeeting.date);
-    if (isNaN(cutoffDate.getTime())) return false;
-    cutoffDate.setHours(18, 0, 0, 0);
+    const parsed = Date.parse(dateRaw);
+    if (!isNaN(parsed)) {
+      cutoffDate = new Date(parsed);
+      cutoffDate.setHours(18, 0, 0, 0);
+    }
+  }
+
+  if (!cutoffDate || isNaN(cutoffDate.getTime())) {
+    return true; // If date cannot be parsed, treat as valid to prevent flickering
   }
 
   const now = new Date();
@@ -1399,24 +1411,26 @@ function loadLatestMeeting(forceRefresh) {
     }
   }
 
-  // Use cache immediately if valid and not forcing refresh
-  if (!forceRefresh && cachedData && cachedData.meeting && isMeetingCacheValid(cachedData.meeting)) {
+  const hasCachedMeeting = cachedData && cachedData.meeting && (cachedData.meeting.date || cachedData.meeting.subject || cachedData.meeting.place);
+
+  // 1. Render cached meeting immediately if present (0ms lag)
+  if (hasCachedMeeting) {
     renderMeeting(cachedData.meeting);
+  }
+
+  // 2. If cache is valid and not forced, keep rendered cache and return (no network request needed!)
+  if (!forceRefresh && hasCachedMeeting && isMeetingCacheValid(cachedData.meeting)) {
     return;
   }
 
-  // Render existing cache immediately to prevent loading UI lag while fetching fresh data
-  if (cachedData && cachedData.meeting) {
-    renderMeeting(cachedData.meeting);
-  }
-
+  // 3. Otherwise (expired or forced or no cache), fetch fresh data from API
   fetch(NAV_API_URL + "?action=getMeetings")
     .then(function(res) {
       if (!res.ok) throw new Error("HTTP " + res.status);
       return res.json();
     })
     .then(function(data) {
-      if (data && data.length > 0) {
+      if (Array.isArray(data) && data.length > 0) {
         var latest = data[data.length - 1];
         localStorage.setItem(MEETING_CACHE_KEY, JSON.stringify({
           meeting: latest,
@@ -1424,14 +1438,16 @@ function loadLatestMeeting(forceRefresh) {
         }));
         renderMeeting(latest);
       } else {
-        if (!cachedData || !cachedData.meeting) {
+        // ONLY render error if we don't already have a valid cached meeting
+        if (!hasCachedMeeting) {
           renderMeetingError("등록된 모임이 없습니다");
         }
       }
     })
     .catch(function(err) {
       console.error("Failed to load meeting info:", err);
-      if (!cachedData || !cachedData.meeting) {
+      // ONLY render error if we don't already have a valid cached meeting
+      if (!hasCachedMeeting) {
         renderMeetingError("연동 실패 (구글시트 Apps Script URL 확인 필요)");
       }
     });
