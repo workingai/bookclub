@@ -723,11 +723,10 @@ class ReadersNav extends HTMLElement {
           },
           body: JSON.stringify({
             action: "addBook",
-            id: savedUser,
-            recommender: savedUser,
             name: nameVal,
             url: urlVal,
-            date: new Date().toISOString().slice(0, 19).replace('T', ' ')
+            date: new Date().toISOString().slice(0, 19).replace('T', ' '),
+            recommender: savedUser
           })
         });
         const result = await res.json();
