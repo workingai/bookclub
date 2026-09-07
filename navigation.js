@@ -1,4 +1,4 @@
-(() => {
+﻿(() => {
 const NAV_API_URL = "https://script.google.com/macros/s/AKfycbxAOsg5g3sr2w4HrbpSMXc51hbC96h0cYnzoZoEq3v4-4lOjrWi2DnMuMY_CSG82XfNJA/exec";
 
 class ReadersNav extends HTMLElement {
@@ -637,7 +637,6 @@ class ReadersNav extends HTMLElement {
         topicSubmitBtn.textContent = isEditMode ? "수정하기" : "등록하기";
       }
     });
-
     // Admin Modal elements
     const adminModal = shadow.getElementById("admin-modal");
     const adminCloseBtn = shadow.getElementById("admin-modal-close-btn");
@@ -1757,7 +1756,6 @@ class ReadersTopics extends HTMLElement {
   }
 }
 customElements.define('readers-topics', ReadersTopics);
-
 // ============================================================
 // Meeting Info Loader — no cache, always fetch from API
 // ============================================================
