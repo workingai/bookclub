@@ -64,7 +64,7 @@ async function registerTopic(payload) {
     throw new Error("저장 결과를 확인하지 못했습니다. 중복 등록을 피하려면 목록을 새로고침해 확인한 후 다시 시도해 주세요.");
   }
   if (!result.success) throw new Error(result.error || "Topic 등록에 실패했습니다.");
-  return {
+  return result.topic || {
     ID: payload.id, Book: payload.book, Subject: payload.subject, Topic: payload.topic,
     URL: payload.url, Review: payload.review,
     Date: new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Seoul" }).format(new Date())
@@ -664,6 +664,7 @@ class ReadersNav extends HTMLElement {
             headers: { "Content-Type": "text/plain" },
             body: JSON.stringify({
               action: "updateTopic",
+              topicId: editingTopicData["Topic ID"],
               id: savedUser,
               author: updatedTopic.ID,
               oldBook: editingTopicData.Book ?? editingTopicData.book ?? "",
@@ -1129,6 +1130,51 @@ class ReadersArchive extends HTMLElement {
 customElements.define('readers-archive', ReadersArchive);
 
 
+
+const commentDrafts = new Map();
+function mountTopicComments(container, topic) {
+  const topicId = topic['Topic ID'];
+  const state = commentDrafts.get(topicId) || {draft:'',pending:false};
+  if(topicId) commentDrafts.set(topicId,state);
+  const section = document.createElement('section');
+  section.className='topic-comments';
+  section.style.cssText='margin-top:28px;padding-top:22px;border-top:1px solid #E5E7EB';
+  section.innerHTML='<style>.topic-comments textarea:focus{outline:2px solid #2A6B52;outline-offset:2px}.topic-comments button:disabled{opacity:.5;cursor:wait}.comment-entry{padding:14px 0;border-bottom:1px solid #eee;overflow-wrap:anywhere}.comment-meta{font-size:12px;color:#777;margin-bottom:8px}.comment-body{font-size:14px;line-height:1.7;white-space:pre-wrap}</style><div style="display:flex;align-items:center;justify-content:space-between"><h3 style="font-size:16px;color:#2A6B52">댓글 <span class="count"></span></h3><button type="button" class="refresh" style="background:none;border:0;color:#2A6B52;padding:8px;cursor:pointer">새로고침</button></div><div class="list" aria-live="polite">댓글을 불러오는 중입니다…</div><form style="margin-top:20px"><label style="font-size:13px">댓글 작성<textarea rows="3" maxlength="3000" required placeholder="함께 나누고 싶은 생각을 적어 주세요." style="display:block;width:100%;box-sizing:border-box;margin:8px 0;padding:12px;border:1px solid #D1D5DB;border-radius:8px;font:inherit;resize:vertical"></textarea></label><div style="display:flex;justify-content:space-between;align-items:center"><span class="limit" style="font-size:12px;color:#777"></span><button type="submit" style="background:#2A6B52;color:white;border:0;border-radius:8px;padding:10px 18px;cursor:pointer">댓글 등록</button></div></form><p class="status" role="status" style="font-size:13px;line-height:1.6;color:#777"></p>';
+  container.append(section);
+  const list=section.querySelector('.list'), status=section.querySelector('.status'), form=section.querySelector('form'), input=section.querySelector('textarea'), submit=form.querySelector('button'), refresh=section.querySelector('.refresh');
+  let loading=false, comments=[];
+  input.value=state.draft;
+  const sync=()=>{submit.disabled=loading||state.pending;refresh.disabled=loading||state.pending;input.readOnly=state.pending;submit.textContent=state.pending?'등록 중…':'댓글 등록';section.querySelector('.limit').textContent=input.value.length+' / 3000';};
+  input.addEventListener('input',()=>{state.draft=input.value;sync();});
+  const paint=()=>{
+    list.replaceChildren();section.querySelector('.count').textContent='('+comments.length+')';
+    if(!comments.length) list.textContent='아직 댓글이 없습니다. 첫 생각을 나눠 주세요.';
+    comments.forEach(c=>{const article=document.createElement('article');article.className='comment-entry';const meta=document.createElement('div');meta.className='comment-meta';meta.textContent=c.AuthorID+' · '+c.CreatedAt;const body=document.createElement('div');body.className='comment-body';body.textContent=c.Content;article.append(meta,body);list.append(article);});
+  };
+  const load=async()=>{
+    if(loading||state.pending)return;
+    loading=true;sync();
+    try{const rows=await topicRequestJSON(NAV_API_URL+'?action=getComments&topicId='+encodeURIComponent(topicId)+'&_='+Date.now(),{},45000);if(!Array.isArray(rows))throw Error(rows?.error||'댓글 조회에 실패했습니다.');comments=rows;paint();}
+    catch(e){status.textContent=e.message;list.textContent='댓글을 불러오지 못했습니다. 새로고침을 눌러 주세요.';}
+    finally{loading=false;sync();}
+  };
+  state.onFinish=()=>{input.value=state.draft;sync();if(section.isConnected)load();};
+  if(!topicId){form.hidden=true;refresh.hidden=true;list.textContent='페이지를 새로고침한 후 토픽을 다시 열어 주세요.';return;}
+  refresh.addEventListener('click',()=>{status.textContent='';load();});
+  form.addEventListener('submit',async e=>{
+    e.preventDefault();if(loading||state.pending)return;
+    const id=localStorage.getItem('readers_user_id'),content=input.value.trim();
+    if(!id||!content){status.textContent=!id?'상단에서 로그인한 후 댓글을 등록해 주세요.':'댓글 내용을 입력해 주세요.';return;}
+    state.pending=true;sync();status.textContent='';
+    try{const result=await topicRequestJSON(NAV_API_URL,{method:'POST',mode:'cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'addComment',topicId,id,content})},45000);
+      if(!result.success||!result.comment?.['Comment ID'])throw Error(result.error||'등록 결과를 확인하지 못했습니다.');
+      comments.push(result.comment);paint();state.draft='';input.value='';status.textContent='댓글이 등록되었습니다.';
+    }catch(e){status.textContent=e.message+' 저장되었을 수 있으니 새로고침으로 목록을 확인한 후 다시 등록해 주세요.';}
+    finally{state.pending=false;sync();if(!section.isConnected)state.onFinish();}
+  });
+  sync();load();
+}
+
 class ReadersTopics extends HTMLElement {
   connectedCallback() {
     const shadow = this.attachShadow({ mode: 'open' });
@@ -1432,7 +1478,7 @@ class ReadersTopics extends HTMLElement {
     let rollInterval = null;
     const root = shadow.getElementById("topics-root");
 
-    const CACHE_KEY = "readers_topics_cache";
+    const CACHE_KEY = "readers_topics_cache_v2";
     const DELETED_KEY = "readers_topics_deleted";
     const EDITED_KEY = "readers_topics_edited";
 
@@ -1454,6 +1500,7 @@ class ReadersTopics extends HTMLElement {
 
     const isSameTopic = (a, b) => {
       if (!a || !b) return false;
+      if (a["Topic ID"] && b["Topic ID"]) return a["Topic ID"] === b["Topic ID"];
       const aSub = String(a.Subject || a.subject || a.Title || a.title || '').trim();
       const bSub = String(b.Subject || b.subject || b.Title || b.title || '').trim();
       const aBook = String(a.Book || a.book || '').trim();
@@ -1703,6 +1750,7 @@ class ReadersTopics extends HTMLElement {
       detailBody.textContent = String(topicText).trim() ? topicText : "본문이 비어 있습니다.";
       detailBody.classList.toggle("is-empty", !String(topicText).trim());
 
+      mountTopicComments(root.querySelector(".detail-content-box"), item);
       const backBtnTop = root.querySelector("#detail-back-btn-top");
       const backBtnBottom = root.querySelector("#detail-back-btn-bottom");
       const editBtn = root.querySelector("#detail-edit-btn");
@@ -1732,6 +1780,7 @@ class ReadersTopics extends HTMLElement {
               headers: { "Content-Type": "text/plain" },
               body: JSON.stringify({
                 action: "deleteTopic",
+                topicId: item["Topic ID"],
                 id: localStorage.getItem("readers_user_id"),
                 author: item.ID ?? item.id ?? item.Writer ?? item.writer ?? "",
                 book: item.Book ?? item.book ?? "",
