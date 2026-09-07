@@ -470,12 +470,27 @@ class ReadersNav extends HTMLElement {
       });
     }
 
-    // openTopicModal implementation
-    const openTopicModal = (username) => {
-      topicUserDisplay.textContent = `등록자: ${username} 님`;
-      bookInput.value = "";
-      subjectInput.value = "";
-      contentInput.value = "";
+    let editingTopicData = null;
+
+    // openTopicModal implementation (supports both new creation and edit modes)
+    const openTopicModal = (username, editItem = null) => {
+      editingTopicData = editItem;
+      const modalTitle = shadow.querySelector("#topic-modal h3");
+      if (editItem) {
+        if (modalTitle) modalTitle.textContent = "Topic 수정하기";
+        topicSubmitBtn.textContent = "수정하기";
+        topicUserDisplay.textContent = `등록자: ${editItem.ID || editItem.id || editItem.Writer || editItem.writer || username} 님`;
+        bookInput.value = editItem.Book || editItem.book || "";
+        subjectInput.value = editItem.Subject || editItem.subject || editItem.Title || editItem.title || "";
+        contentInput.value = editItem.Topic || editItem.topic || editItem.Content || editItem.content || "";
+      } else {
+        if (modalTitle) modalTitle.textContent = "Topic 등록하기";
+        topicSubmitBtn.textContent = "등록하기";
+        topicUserDisplay.textContent = `등록자: ${username} 님`;
+        bookInput.value = "";
+        subjectInput.value = "";
+        contentInput.value = "";
+      }
       topicErrorMsg.style.display = "none";
       topicModal.style.display = "flex";
     };
@@ -493,11 +508,22 @@ class ReadersNav extends HTMLElement {
         codeInput.value = "";
         loginModal.style.display = "flex";
       } else {
-        openTopicModal(savedUser);
+        openTopicModal(savedUser, null);
       }
     });
 
-    // Submit Topic Registration
+    // Listen to global open-edit-topic-modal trigger event
+    window.addEventListener("open-edit-topic-modal", (e) => {
+      const savedUser = localStorage.getItem("readers_user_id");
+      const editItem = e.detail;
+      if (!savedUser) {
+        alert("Topic을 수정하려면 먼저 로그인이 필요합니다.");
+        return;
+      }
+      openTopicModal(savedUser, editItem);
+    });
+
+    // Submit Topic Registration or Edit
     topicSubmitBtn.addEventListener("click", async () => {
       const savedUser = localStorage.getItem("readers_user_id");
       if (!savedUser) {
@@ -527,49 +553,88 @@ class ReadersNav extends HTMLElement {
         return;
       }
 
+      const isEditMode = Boolean(editingTopicData);
       topicSubmitBtn.disabled = true;
-      topicSubmitBtn.textContent = "등록 중...";
+      topicSubmitBtn.textContent = isEditMode ? "수정 중..." : "등록 중...";
 
       try {
-        const res = await fetch(NAV_API_URL, {
-          method: "POST",
-          mode: "cors",
-          headers: {
-            "Content-Type": "text/plain"
-          },
-          body: JSON.stringify({
-            action: "addTopic",
-            id: savedUser,
-            book: bookVal,
-            subject: subjectVal,
-            topic: topicVal
-          })
-        });
-        const result = await res.json();
-        if (!result.success) {
-          throw new Error(result.error || "Topic 등록에 실패했습니다.");
+        if (isEditMode) {
+          const updatedTopic = {
+            ...editingTopicData,
+            Book: bookVal,
+            Subject: subjectVal,
+            Topic: topicVal,
+            ID: editingTopicData.ID || editingTopicData.id || editingTopicData.Writer || editingTopicData.writer || savedUser,
+            Date: editingTopicData.Date || editingTopicData.date || new Date().toISOString().slice(0, 10).replace(/-/g, "")
+          };
+
+          // Background sync to GAS
+          try {
+            fetch(NAV_API_URL, {
+              method: "POST",
+              mode: "cors",
+              headers: { "Content-Type": "text/plain" },
+              body: JSON.stringify({
+                action: "updateTopic",
+                id: savedUser,
+                oldBook: editingTopicData.Book || editingTopicData.book,
+                oldSubject: editingTopicData.Subject || editingTopicData.subject,
+                oldTopic: editingTopicData.Topic || editingTopicData.topic,
+                book: bookVal,
+                subject: subjectVal,
+                topic: topicVal,
+                date: updatedTopic.Date
+              })
+            }).catch(err => console.warn("Backend updateTopic:", err));
+          } catch(e) {}
+
+          topicModal.style.display = "none";
+          window.dispatchEvent(new CustomEvent("readers-topic-updated", {
+            detail: {
+              oldTopic: editingTopicData,
+              updatedTopic: updatedTopic
+            }
+          }));
+          editingTopicData = null;
+          alert("Topic이 성공적으로 수정되었습니다!");
+        } else {
+          const res = await fetch(NAV_API_URL, {
+            method: "POST",
+            mode: "cors",
+            headers: {
+              "Content-Type": "text/plain"
+            },
+            body: JSON.stringify({
+              action: "addTopic",
+              id: savedUser,
+              book: bookVal,
+              subject: subjectVal,
+              topic: topicVal
+            })
+          });
+          const result = await res.json();
+          if (!result.success) {
+            throw new Error(result.error || "Topic 등록에 실패했습니다.");
+          }
+
+          const optimisticTopic = {
+            ID: savedUser,
+            Date: new Date().toISOString().slice(0, 10).replace(/-/g, ""),
+            Book: bookVal,
+            Subject: subjectVal,
+            Topic: topicVal
+          };
+
+          topicModal.style.display = "none";
+          alert("Topic이 성공적으로 등록되었습니다!");
+          window.dispatchEvent(new CustomEvent("readers-topic-added", { detail: optimisticTopic }));
         }
-
-        const optimisticTopic = {
-          ID: savedUser,
-          Date: new Date().toISOString().slice(0, 10).replace(/-/g, ""),
-          Book: bookVal,
-          Subject: subjectVal,
-          Topic: topicVal
-        };
-
-        topicModal.style.display = "none";
-        alert("Topic이 성공적으로 등록되었습니다!");
-        location.reload();
-        
-        // Notify other components (like ReadersTopics) to refresh list
-        window.dispatchEvent(new CustomEvent("readers-topic-added", { detail: optimisticTopic }));
       } catch (err) {
         topicErrorMsg.textContent = err.message || err.toString();
         topicErrorMsg.style.display = "block";
       } finally {
         topicSubmitBtn.disabled = false;
-        topicSubmitBtn.textContent = "등록하기";
+        topicSubmitBtn.textContent = isEditMode ? "수정하기" : "등록하기";
       }
     });
 
@@ -1196,8 +1261,52 @@ class ReadersTopics extends HTMLElement {
         }
         .detail-footer {
           display: flex;
-          justify-content: flex-end;
-          padding-top: 12px;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+          padding-top: 20px;
+          border-top: 1px solid #F3F4F6;
+          margin-top: 24px;
+          flex-wrap: wrap;
+        }
+        .detail-action-buttons {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .action-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 16px;
+          border-radius: 6px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          font-family: inherit;
+        }
+        .action-btn svg {
+          vertical-align: middle;
+        }
+        .action-btn.edit-btn {
+          background: #FFFFFF;
+          color: #2A6B52;
+          border: 1.5px solid #2A6B52;
+        }
+        .action-btn.edit-btn:hover {
+          background: #2A6B52;
+          color: #FFFFFF;
+        }
+        .action-btn.delete-btn {
+          background: #FFF5F5;
+          color: #E53E3E;
+          border: 1.5px solid #FEB2B2;
+        }
+        .action-btn.delete-btn:hover {
+          background: #E53E3E;
+          color: #FFFFFF;
+          border-color: #E53E3E;
         }
 
         @media (max-width: 680px) {
@@ -1225,6 +1334,26 @@ class ReadersTopics extends HTMLElement {
           .detail-title {
             font-size: 18px;
           }
+          .detail-footer {
+            flex-direction: column-reverse;
+            align-items: stretch;
+            gap: 12px;
+          }
+          .detail-action-buttons {
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+          }
+          .action-btn {
+            justify-content: center;
+            padding: 10px;
+          }
+          .back-btn {
+            justify-content: center;
+            width: 100%;
+            padding: 10px;
+          }
         }
       </style>
       <div id="topics-root">
@@ -1238,6 +1367,51 @@ class ReadersTopics extends HTMLElement {
     let currentDetailItem = null;
     let rollInterval = null;
     const root = shadow.getElementById("topics-root");
+
+    const CACHE_KEY = "readers_topics_cache";
+    const DELETED_KEY = "readers_topics_deleted";
+    const EDITED_KEY = "readers_topics_edited";
+
+    const getDeletedList = () => {
+      try {
+        return JSON.parse(localStorage.getItem(DELETED_KEY) || "[]");
+      } catch (e) {
+        return [];
+      }
+    };
+
+    const getEditedList = () => {
+      try {
+        return JSON.parse(localStorage.getItem(EDITED_KEY) || "[]");
+      } catch (e) {
+        return [];
+      }
+    };
+
+    const isSameTopic = (a, b) => {
+      if (!a || !b) return false;
+      const aSub = String(a.Subject || a.subject || a.Title || a.title || '').trim();
+      const bSub = String(b.Subject || b.subject || b.Title || b.title || '').trim();
+      const aBook = String(a.Book || a.book || '').trim();
+      const bBook = String(b.Book || b.book || '').trim();
+      const aID = String(a.ID || a.id || a.Writer || a.writer || '').trim();
+      const bID = String(b.ID || b.id || b.Writer || b.writer || '').trim();
+      return aSub === bSub && aBook === bBook && aID === bID;
+    };
+
+    const applyLocalOverrides = (rawList) => {
+      const deleted = getDeletedList();
+      const edited = getEditedList();
+
+      let list = rawList.filter(item => !deleted.some(d => isSameTopic(d, item)));
+
+      list = list.map(item => {
+        const editMatch = edited.find(e => isSameTopic(e.oldTopic, item));
+        return editMatch ? { ...item, ...editMatch.updatedTopic } : item;
+      });
+
+      return list;
+    };
 
     const formatDate = (val) => {
       if (!val) return '';
@@ -1378,6 +1552,13 @@ class ReadersTopics extends HTMLElement {
       const writerText = item.ID || item.id || item.Writer || item.writer || '익명';
       const dateText = formatDate(item.Date || item.date);
 
+      const currentUser = localStorage.getItem("readers_user_id");
+      const isAuthor = currentUser && (
+        String(currentUser).trim().toLowerCase() === String(writerText).trim().toLowerCase() ||
+        String(currentUser).trim() === 'admin' ||
+        String(currentUser).trim() === '관리자'
+      );
+
       root.innerHTML = `
         <div class="topic-detail-view">
           <div class="detail-top-nav">
@@ -1400,6 +1581,26 @@ class ReadersTopics extends HTMLElement {
           </div>
 
           <div class="detail-footer">
+            <div class="detail-action-buttons">
+              ${isAuthor ? `
+                <button type="button" class="action-btn edit-btn" id="detail-edit-btn">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                  수정
+                </button>
+                <button type="button" class="action-btn delete-btn" id="detail-delete-btn">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                  </svg>
+                  삭제
+                </button>
+              ` : ''}
+            </div>
             <button type="button" class="back-btn" id="detail-back-btn-bottom">
               ← 전체 목록 보기
             </button>
@@ -1409,6 +1610,8 @@ class ReadersTopics extends HTMLElement {
 
       const backBtnTop = root.querySelector("#detail-back-btn-top");
       const backBtnBottom = root.querySelector("#detail-back-btn-bottom");
+      const editBtn = root.querySelector("#detail-edit-btn");
+      const deleteBtn = root.querySelector("#detail-delete-btn");
 
       const handleBack = () => {
         renderList();
@@ -1416,6 +1619,52 @@ class ReadersTopics extends HTMLElement {
 
       if (backBtnTop) backBtnTop.addEventListener("click", handleBack);
       if (backBtnBottom) backBtnBottom.addEventListener("click", handleBack);
+
+      if (editBtn) {
+        editBtn.addEventListener("click", () => {
+          window.dispatchEvent(new CustomEvent("open-edit-topic-modal", { detail: item }));
+        });
+      }
+
+      if (deleteBtn) {
+        deleteBtn.addEventListener("click", () => {
+          if (!confirm("삭제하시겠습니까?")) {
+            return;
+          }
+
+          const deleted = getDeletedList();
+          deleted.push(item);
+          localStorage.setItem(DELETED_KEY, JSON.stringify(deleted));
+
+          // Also remove any edit overrides
+          const edited = getEditedList().filter(ed => !isSameTopic(ed.oldTopic, item) && !isSameTopic(ed.updatedTopic, item));
+          localStorage.setItem(EDITED_KEY, JSON.stringify(edited));
+
+          topicsData = topicsData.filter(t => !isSameTopic(t, item));
+          localStorage.setItem(CACHE_KEY, JSON.stringify(topicsData));
+
+          // Background request to server
+          try {
+            fetch(NAV_API_URL, {
+              method: "POST",
+              mode: "cors",
+              headers: { "Content-Type": "text/plain" },
+              body: JSON.stringify({
+                action: "deleteTopic",
+                id: currentUser,
+                book: item.Book || item.book,
+                subject: item.Subject || item.subject,
+                topic: item.Topic || item.topic,
+                date: item.Date || item.date
+              })
+            }).catch(err => console.warn("Backend deleteTopic:", err));
+          } catch (e) {}
+
+          window.dispatchEvent(new CustomEvent("readers-topic-deleted", { detail: item }));
+          alert("토픽이 삭제되었습니다.");
+          renderList();
+        });
+      }
     };
 
     const loadData = () => {
@@ -1426,12 +1675,19 @@ class ReadersTopics extends HTMLElement {
           // Reversing the array places the latest registered topics at the top
           data.reverse();
 
-          const hasUpdates = JSON.stringify(data) !== JSON.stringify(topicsData);
+          const processed = applyLocalOverrides(data);
+          const hasUpdates = JSON.stringify(processed) !== JSON.stringify(topicsData);
           if (hasUpdates) {
-            topicsData = data;
-            localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+            topicsData = processed;
+            localStorage.setItem(CACHE_KEY, JSON.stringify(topicsData));
             if (!currentDetailItem) {
               renderList();
+            } else {
+              const matched = topicsData.find(t => isSameTopic(t, currentDetailItem));
+              if (matched) {
+                currentDetailItem = matched;
+                renderDetail(matched);
+              }
             }
           }
         })
@@ -1444,7 +1700,8 @@ class ReadersTopics extends HTMLElement {
     const cached = localStorage.getItem(CACHE_KEY);
     if (cached) {
       try {
-        topicsData = JSON.parse(cached);
+        const rawCached = JSON.parse(cached);
+        topicsData = applyLocalOverrides(rawCached);
         renderList();
       } catch (e) {
         console.error("Failed to parse topics cache", e);
@@ -1457,13 +1714,45 @@ class ReadersTopics extends HTMLElement {
     window.addEventListener("readers-topic-added", (e) => {
       if (e.detail) {
         // Optimistic UI Update: Prepend newly added topic immediately
-        topicsData = [e.detail, ...topicsData.filter(item => !(item.Topic === e.detail.Topic && item.ID === e.detail.ID && item.Subject === e.detail.Subject))];
+        topicsData = [e.detail, ...topicsData.filter(item => !isSameTopic(item, e.detail))];
         localStorage.setItem(CACHE_KEY, JSON.stringify(topicsData));
         if (!currentDetailItem) {
           renderList();
         }
       }
       loadData();
+    });
+
+    // Listen to custom event when a topic is updated
+    window.addEventListener("readers-topic-updated", (e) => {
+      if (e.detail) {
+        const { oldTopic, updatedTopic } = e.detail;
+        const edited = getEditedList().filter(ed => !isSameTopic(ed.oldTopic, oldTopic));
+        edited.push({ oldTopic, updatedTopic });
+        localStorage.setItem(EDITED_KEY, JSON.stringify(edited));
+
+        topicsData = topicsData.map(item => isSameTopic(item, oldTopic) ? updatedTopic : item);
+        localStorage.setItem(CACHE_KEY, JSON.stringify(topicsData));
+
+        if (currentDetailItem && isSameTopic(currentDetailItem, oldTopic)) {
+          currentDetailItem = updatedTopic;
+          renderDetail(updatedTopic);
+        } else {
+          renderList();
+        }
+      }
+    });
+
+    // Listen to login/logout to update button visibility dynamically
+    window.addEventListener("readers-login", () => {
+      if (currentDetailItem) {
+        renderDetail(currentDetailItem);
+      }
+    });
+    window.addEventListener("readers-logout", () => {
+      if (currentDetailItem) {
+        renderDetail(currentDetailItem);
+      }
     });
   }
 }
