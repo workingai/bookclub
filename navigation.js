@@ -71,6 +71,44 @@ async function registerTopic(payload) {
   };
 }
 
+
+const pendingTopicEdits = new Map();
+const failedTopicDrafts = new Map();
+const topicSaveMessages = new Map();
+const topicEditKey = item => item['Topic ID'] || JSON.stringify([item.ID,item.Date,item.Book,item.Subject,item.Topic]);
+function emitTopicEdit(oldTopic, updatedTopic) {
+  window.dispatchEvent(new CustomEvent('readers-topic-updated', {detail:{oldTopic,updatedTopic}}));
+}
+async function saveTopicEdit(original, updated, payload) {
+  const key = topicEditKey(original);
+  if (pendingTopicEdits.has(key)) return;
+  pendingTopicEdits.set(key, updated);
+  topicSaveMessages.set(key, '변경 내용을 저장하고 있습니다.');
+  emitTopicEdit(original, updated);
+  let failure;
+  try {
+    const result = await topicRequestJSON(NAV_API_URL, {method:'POST',mode:'cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)},45000);
+    if (!result.success) throw new Error(result.error || '저장에 실패했습니다.');
+  } catch (err) {
+    failure = err;
+    // A lost response can follow a successful write. Confirm before reverting.
+    try {
+      const rows = await topicRequestJSON(NAV_API_URL+'?action=getTopics&_='+Date.now(),{},15000);
+      if (Array.isArray(rows) && rows.some(row => row['Topic ID'] === updated['Topic ID'] && updated['Topic ID'] && ['Book','Subject','Topic','URL','Review'].every(field => String(row[field] || '') === String(updated[field] || '')))) failure = null;
+    } catch (_) { /* Keep the draft when the save cannot be confirmed. */ }
+  }
+  pendingTopicEdits.delete(key);
+  if (failure) {
+    failedTopicDrafts.set(key, updated);
+    topicSaveMessages.set(key, '저장을 확인하지 못했습니다. 수정 버튼을 누르면 입력한 내용을 다시 볼 수 있습니다. '+failure.message);
+    emitTopicEdit(updated, original);
+  } else {
+    failedTopicDrafts.delete(key);
+    topicSaveMessages.set(key, '저장되었습니다.');
+    emitTopicEdit(updated, updated);
+  }
+}
+
 class ReadersNav extends HTMLElement {
   connectedCallback() {
     // Check if we are on the index page
@@ -553,6 +591,7 @@ class ReadersNav extends HTMLElement {
 
     // openTopicModal implementation (supports both new creation and edit modes)
     const openTopicModal = (username, editItem = null) => {
+      if (editItem && pendingTopicEdits.has(topicEditKey(editItem))) return;
       editingTopicData = editItem;
       topicUrlInput.value = editItem?.URL ?? "";
       reviewInput.value = editItem?.Review ?? "";
@@ -571,6 +610,12 @@ class ReadersNav extends HTMLElement {
         bookInput.value = "";
         subjectInput.value = "";
         contentInput.value = "";
+      }
+      const retryDraft = editItem && failedTopicDrafts.get(topicEditKey(editItem));
+      if (retryDraft) {
+        bookInput.value = retryDraft.Book; subjectInput.value = retryDraft.Subject;
+        contentInput.value = retryDraft.Topic; topicUrlInput.value = retryDraft.URL;
+        reviewInput.value = retryDraft.Review;
       }
       topicErrorMsg.style.display = "none";
       topicModal.style.display = "flex";
@@ -658,41 +703,18 @@ class ReadersNav extends HTMLElement {
             Date: editingTopicData.Date || editingTopicData.date || new Date().toISOString().slice(0, 10).replace(/-/g, "")
           };
 
-          const res = await fetch(NAV_API_URL, {
-            method: "POST",
-            mode: "cors",
-            headers: { "Content-Type": "text/plain" },
-            body: JSON.stringify({
-              action: "updateTopic",
-              topicId: editingTopicData["Topic ID"],
-              id: savedUser,
-              author: updatedTopic.ID,
-              oldBook: editingTopicData.Book ?? editingTopicData.book ?? "",
-              oldSubject: editingTopicData.Subject ?? editingTopicData.subject ?? "",
-              oldTopic: editingTopicData.Topic ?? editingTopicData.topic ?? "",
-              oldURL: editingTopicData.URL ?? "",
-              oldReview: editingTopicData.Review ?? "",
-              url: urlVal,
-              review: reviewVal,
-              book: bookVal,
-              subject: subjectVal,
-              topic: topicVal,
-              date: editingTopicData.Date ?? editingTopicData.date ?? ""
-            })
-          });
-          if (!res.ok) throw new Error("HTTP " + res.status);
-          const result = await res.json();
-          if (!result.success) throw new Error(result.error || "Topic 수정에 실패했습니다.");
-
-          topicModal.style.display = "none";
-          window.dispatchEvent(new CustomEvent("readers-topic-updated", {
-            detail: {
-              oldTopic: editingTopicData,
-              updatedTopic: updatedTopic
-            }
-          }));
+          const original = editingTopicData;
+          const payload = {
+            action: 'updateTopic', topicId: original['Topic ID'], id: savedUser,
+            author: updatedTopic.ID, oldBook: original.Book ?? original.book ?? '',
+            oldSubject: original.Subject ?? original.subject ?? '',
+            oldTopic: original.Topic ?? original.topic ?? '', oldURL: original.URL ?? '',
+            oldReview: original.Review ?? '', date: original.Date ?? original.date ?? '',
+            book: bookVal, subject: subjectVal, topic: topicVal, url: urlVal, review: reviewVal
+          };
+          topicModal.style.display = 'none';
           editingTopicData = null;
-          alert("Topic이 성공적으로 수정되었습니다!");
+          void saveTopicEdit(original, updatedTopic, payload);
         } else {
           const registeredTopic = await registerTopic({
             id: savedUser, book: bookVal, subject: subjectVal, topic: topicVal, url: urlVal, review: reviewVal
@@ -1701,7 +1723,7 @@ class ReadersTopics extends HTMLElement {
 
           <div class="detail-footer">
             <div class="detail-action-buttons">
-              ${isAuthor ? `
+              ${isAuthor && !pendingTopicEdits.has(topicEditKey(item)) ? `
                 <button type="button" class="action-btn edit-btn" id="detail-edit-btn">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -1750,6 +1772,14 @@ class ReadersTopics extends HTMLElement {
       detailBody.textContent = String(topicText).trim() ? topicText : "본문이 비어 있습니다.";
       detailBody.classList.toggle("is-empty", !String(topicText).trim());
 
+      const saveMessage = topicSaveMessages.get(topicEditKey(item));
+      if (saveMessage) {
+        const notice = document.createElement('p');
+        notice.setAttribute('role','status');
+        notice.style.cssText = 'font-size:13px;color:#2A6B52;line-height:1.6';
+        notice.textContent = saveMessage;
+        root.querySelector('.detail-title').after(notice);
+      }
       mountTopicComments(root.querySelector(".detail-content-box"), item);
       const backBtnTop = root.querySelector("#detail-back-btn-top");
       const backBtnBottom = root.querySelector("#detail-back-btn-bottom");
@@ -1813,7 +1843,7 @@ class ReadersTopics extends HTMLElement {
       const version = ++topicLoadVersion;
       topicRequestJSON(NAV_API_URL + "?action=getTopics&_=" + Date.now())
         .then(data => {
-          if (version !== topicLoadVersion) return;
+          if (version !== topicLoadVersion || pendingTopicEdits.size) return;
           if (!Array.isArray(data)) throw new Error(data?.error || "토픽 조회 응답 형식이 올바르지 않습니다.");
           // Reversing the array places the latest registered topics at the top
           data.reverse();
