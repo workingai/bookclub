@@ -1,6 +1,13 @@
 ﻿(() => {
 const NAV_API_URL = "https://script.google.com/macros/s/AKfycbxAOsg5g3sr2w4HrbpSMXc51hbC96h0cYnzoZoEq3v4-4lOjrWi2DnMuMY_CSG82XfNJA/exec";
 
+function topicLinkURL(value) {
+  try {
+    const url = new URL(String(value ?? "").trim());
+    return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+  } catch (err) { return ""; }
+}
+
 async function topicRequestJSON(url, options = {}, timeout = 15000) {
   const controller = new AbortController();
   let timer;
@@ -27,7 +34,8 @@ async function registerTopic(payload) {
   const matches = item => String(item.ID ?? "") === payload.id &&
     String(item.Book ?? "") === payload.book &&
     String(item.Subject ?? "") === payload.subject &&
-    String(item.Topic ?? "") === payload.topic;
+    String(item.Topic ?? "") === payload.topic &&
+    String(item.URL ?? "") === payload.url && String(item.Review ?? "") === payload.review;
   const readTopics = async () => {
     const rows = await topicRequestJSON(NAV_API_URL + "?action=getTopics&_=" + Date.now());
     if (!Array.isArray(rows)) throw new Error(rows?.error || "토픽 조회 응답 오류");
@@ -58,6 +66,7 @@ async function registerTopic(payload) {
   if (!result.success) throw new Error(result.error || "Topic 등록에 실패했습니다.");
   return {
     ID: payload.id, Book: payload.book, Subject: payload.subject, Topic: payload.topic,
+    URL: payload.url, Review: payload.review,
     Date: new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Seoul" }).format(new Date())
   };
 }
@@ -145,16 +154,23 @@ class ReadersNav extends HTMLElement {
           </div>
 
           <div style="margin-bottom:18px;">
+            <label for="topic-url-input" style="display:block;font-size:13.5px;color:#374151;margin-bottom:7px;font-weight:600;">URL (선택)</label>
+            <input type="url" id="topic-url-input" placeholder="https:// — 작품이나 아티클 링크" style="width:100%;padding:11px 14px;border:1px solid #D1D5DB;border-radius:8px;box-sizing:border-box;font-size:14.5px;font-family:inherit;">
+          </div>
+          <div style="margin-bottom:18px;">
             <label style="display:block; font-size:13.5px; color:#374151; margin-bottom:7px; font-weight:600;">제목</label>
             <input type="text" id="topic-subject-input" placeholder="토픽의 핵심 제목을 입력해 주세요" style="width:100%; padding:11px 14px; border:1px solid #D1D5DB; border-radius:8px; box-sizing:border-box; font-size:14.5px; outline:none; font-family:inherit;">
           </div>
           
+          <div style="margin-bottom:18px;">
+            <label for="topic-review-input" style="display:block;font-size:13.5px;color:#374151;margin-bottom:7px;font-weight:600;">어떤 부분이 인상 깊었는지 공유해 주세요.</label>
+            <textarea id="topic-review-input" placeholder="인상 깊었던 장면이나 문장, 작품에 대한 소감을 적어 주세요." style="width:100%;height:150px;min-height:100px;padding:14px 16px;border:1px solid #D1D5DB;border-radius:8px;box-sizing:border-box;font-size:14.5px;font-family:inherit;resize:vertical;line-height:1.65;"></textarea>
+          </div>
           <div style="margin-bottom:24px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:7px;">
               <label style="display:block; font-size:13.5px; color:#374151; font-weight:600;">함께 이야기하고 싶은 Topic을 입력해 주세요.</label>
-              <span style="font-size:12px; color:#6B7280;">(300~400자 권장)</span>
             </div>
-            <textarea id="topic-content-input" placeholder="함께 이야기 나누고 싶은 질문이나 토픽 내용을 자세히 입력해 주세요." style="width:100%; height:220px; min-height:180px; padding:14px 16px; border:1px solid #D1D5DB; border-radius:8px; box-sizing:border-box; font-size:14.5px; outline:none; font-family:inherit; resize: vertical; line-height:1.65;"></textarea>
+            <textarea id="topic-content-input" placeholder="함께 이야기 나누고 싶은 질문이나 토픽 내용을 자세히 입력해 주세요." style="width:100%; height:74px; min-height:60px; padding:14px 16px; border:1px solid #D1D5DB; border-radius:8px; box-sizing:border-box; font-size:14.5px; outline:none; font-family:inherit; resize: vertical; line-height:1.65;"></textarea>
           </div>
           
           <div id="topic-modal-error-msg" style="color:#d93025; font-size:12.5px; margin-bottom:16px; display:none; line-height:1.4;"></div>
@@ -393,6 +409,8 @@ class ReadersNav extends HTMLElement {
     const bookInput = shadow.getElementById("topic-book-input");
     const subjectInput = shadow.getElementById("topic-subject-input");
     const contentInput = shadow.getElementById("topic-content-input");
+    const topicUrlInput = shadow.getElementById("topic-url-input");
+    const reviewInput = shadow.getElementById("topic-review-input");
     const topicErrorMsg = shadow.getElementById("topic-modal-error-msg");
 
     const authContainerMobile = shadow.getElementById("auth-container-mobile");
@@ -536,6 +554,8 @@ class ReadersNav extends HTMLElement {
     // openTopicModal implementation (supports both new creation and edit modes)
     const openTopicModal = (username, editItem = null) => {
       editingTopicData = editItem;
+      topicUrlInput.value = editItem?.URL ?? "";
+      reviewInput.value = editItem?.Review ?? "";
       const modalTitle = shadow.querySelector("#topic-modal h3");
       if (editItem) {
         if (modalTitle) modalTitle.textContent = "Topic 수정하기";
@@ -596,8 +616,15 @@ class ReadersNav extends HTMLElement {
       const bookVal = bookInput.value.trim();
       const subjectVal = subjectInput.value.trim();
       const topicVal = contentInput.value.trim();
+      const urlVal = topicUrlInput.value.trim();
+      const reviewVal = reviewInput.value.trim();
       topicErrorMsg.style.display = "none";
 
+      if (urlVal && !topicLinkURL(urlVal)) {
+        topicErrorMsg.textContent = "URL은 http:// 또는 https://로 시작하는 올바른 주소를 입력해 주세요.";
+        topicErrorMsg.style.display = "block";
+        return;
+      }
       if (!bookVal) {
         topicErrorMsg.textContent = "작품명 또는 이슈를 입력해 주세요.";
         topicErrorMsg.style.display = "block";
@@ -625,6 +652,8 @@ class ReadersNav extends HTMLElement {
             Book: bookVal,
             Subject: subjectVal,
             Topic: topicVal,
+            URL: urlVal,
+            Review: reviewVal,
             ID: editingTopicData.ID || editingTopicData.id || editingTopicData.Writer || editingTopicData.writer || savedUser,
             Date: editingTopicData.Date || editingTopicData.date || new Date().toISOString().slice(0, 10).replace(/-/g, "")
           };
@@ -640,6 +669,10 @@ class ReadersNav extends HTMLElement {
               oldBook: editingTopicData.Book ?? editingTopicData.book ?? "",
               oldSubject: editingTopicData.Subject ?? editingTopicData.subject ?? "",
               oldTopic: editingTopicData.Topic ?? editingTopicData.topic ?? "",
+              oldURL: editingTopicData.URL ?? "",
+              oldReview: editingTopicData.Review ?? "",
+              url: urlVal,
+              review: reviewVal,
               book: bookVal,
               subject: subjectVal,
               topic: topicVal,
@@ -661,7 +694,7 @@ class ReadersNav extends HTMLElement {
           alert("Topic이 성공적으로 수정되었습니다!");
         } else {
           const registeredTopic = await registerTopic({
-            id: savedUser, book: bookVal, subject: subjectVal, topic: topicVal
+            id: savedUser, book: bookVal, subject: subjectVal, topic: topicVal, url: urlVal, review: reviewVal
           });
           topicModal.style.display = "none";
           window.dispatchEvent(new CustomEvent("readers-topic-added", { detail: registeredTopic }));
@@ -1609,7 +1642,14 @@ class ReadersTopics extends HTMLElement {
           <h2 class="detail-title"></h2>
 
           <div class="detail-content-box">
-            <div class="detail-body"></div>
+            <section class="detail-review-section">
+              <h3 style="font-size:13px;color:#2A6B52;margin:0 0 10px;">리뷰</h3>
+              <div class="detail-body detail-review"></div>
+            </section>
+            <section style="margin-top:28px;padding-top:22px;border-top:1px solid #E5E7EB;">
+              <h3 style="font-size:13px;color:#2A6B52;margin:0 0 10px;">토픽</h3>
+              <div class="detail-body detail-topic"></div>
+            </section>
           </div>
 
           <div class="detail-footer">
@@ -1641,10 +1681,25 @@ class ReadersTopics extends HTMLElement {
       `;
 
       // Render sheet values as text and preserve the body\'s line breaks.
-      root.querySelector(".detail-badge").textContent = bookText;
+      const bookBadge = root.querySelector(".detail-badge");
+      bookBadge.textContent = bookText;
+      const bookURL = topicLinkURL(item.URL);
+      if (bookURL) {
+        const link = document.createElement("a");
+        link.href = bookURL;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = bookText;
+        link.style.color = "inherit";
+        link.style.textDecoration = "underline";
+        bookBadge.replaceChildren(link);
+      }
+      const reviewBody = root.querySelector(".detail-review");
+      reviewBody.textContent = String(item.Review ?? "").trim() ? item.Review : "등록된 리뷰가 없습니다.";
+      reviewBody.classList.toggle("is-empty", !String(item.Review ?? "").trim());
       root.querySelector(".detail-writer-info strong").textContent = writerText;
       root.querySelector(".detail-title").textContent = subjectText;
-      const detailBody = root.querySelector(".detail-body");
+      const detailBody = root.querySelector(".detail-topic");
       detailBody.textContent = String(topicText).trim() ? topicText : "본문이 비어 있습니다.";
       detailBody.classList.toggle("is-empty", !String(topicText).trim());
 
@@ -1682,6 +1737,8 @@ class ReadersTopics extends HTMLElement {
                 book: item.Book ?? item.book ?? "",
                 subject: item.Subject ?? item.subject ?? "",
                 topic: item.Topic ?? item.topic ?? "",
+                oldURL: item.URL ?? "",
+                oldReview: item.Review ?? "",
                 date: item.Date ?? item.date ?? ""
               })
             });
