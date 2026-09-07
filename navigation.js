@@ -568,25 +568,26 @@ class ReadersNav extends HTMLElement {
             Date: editingTopicData.Date || editingTopicData.date || new Date().toISOString().slice(0, 10).replace(/-/g, "")
           };
 
-          // Background sync to GAS
-          try {
-            fetch(NAV_API_URL, {
-              method: "POST",
-              mode: "cors",
-              headers: { "Content-Type": "text/plain" },
-              body: JSON.stringify({
-                action: "updateTopic",
-                id: savedUser,
-                oldBook: editingTopicData.Book || editingTopicData.book,
-                oldSubject: editingTopicData.Subject || editingTopicData.subject,
-                oldTopic: editingTopicData.Topic || editingTopicData.topic,
-                book: bookVal,
-                subject: subjectVal,
-                topic: topicVal,
-                date: updatedTopic.Date
-              })
-            }).catch(err => console.warn("Backend updateTopic:", err));
-          } catch(e) {}
+          const res = await fetch(NAV_API_URL, {
+            method: "POST",
+            mode: "cors",
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify({
+              action: "updateTopic",
+              id: savedUser,
+              author: updatedTopic.ID,
+              oldBook: editingTopicData.Book ?? editingTopicData.book ?? "",
+              oldSubject: editingTopicData.Subject ?? editingTopicData.subject ?? "",
+              oldTopic: editingTopicData.Topic ?? editingTopicData.topic ?? "",
+              book: bookVal,
+              subject: subjectVal,
+              topic: topicVal,
+              date: editingTopicData.Date ?? editingTopicData.date ?? ""
+            })
+          });
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          const result = await res.json();
+          if (!result.success) throw new Error(result.error || "Topic 수정에 실패했습니다.");
 
           topicModal.style.display = "none";
           window.dispatchEvent(new CustomEvent("readers-topic-updated", {
@@ -1214,7 +1215,9 @@ class ReadersTopics extends HTMLElement {
           font-weight: 700;
           padding: 6px 12px;
           border-radius: 6px;
-          font-size: 13px;
+          font-size: 14px;
+          overflow-wrap: anywhere;
+          min-width: 0;
         }
         .detail-writer-info {
           font-size: 13px;
@@ -1229,26 +1232,19 @@ class ReadersTopics extends HTMLElement {
           font-weight: 700;
           color: #111827;
           line-height: 1.4;
-          margin: 0 0 20px;
+          margin: 0;
+          padding-bottom: 24px;
+          overflow-wrap: anywhere;
+          border-bottom: 1px solid #E5E7EB;
           font-family: 'Noto Sans KR', sans-serif;
         }
         .detail-content-box {
-          background: #FAFDFB;
-          border: 1px solid #E2E8F0;
-          border-radius: 8px;
-          padding: 22px 24px;
-          margin-bottom: 24px;
+          padding: 28px 0;
+          min-height: 160px;
         }
-        .detail-content-label {
-          font-size: 12px;
-          font-weight: 700;
-          color: #2A6B52;
-          letter-spacing: 0.05em;
-          text-transform: uppercase;
-          margin-bottom: 10px;
-          display: flex;
-          align-items: center;
-          gap: 4px;
+        .detail-body.is-empty {
+          color: #9CA3AF;
+          font-size: 14px;
         }
         .detail-body {
           font-size: 15px;
@@ -1475,7 +1471,7 @@ class ReadersTopics extends HTMLElement {
 
       topicsData.forEach((item) => {
         const bookText = item.Book || item.book || '자유 도서/이슈';
-        const subjectText = item.Subject || item.subject || item.Title || item.title || item.Topic || item.topic || '제목 없음';
+        const subjectText = String(item.Subject ?? '').trim() || '제목 없음';
         const writerText = item.ID || item.id || item.Writer || item.writer || '익명';
         const dateText = formatDate(item.Date || item.date);
 
@@ -1489,7 +1485,7 @@ class ReadersTopics extends HTMLElement {
             ${bookText}
           </div>
           <div class="topic-main">
-            <div class="topic-title">${subjectText}</div>
+            <div class="topic-title"></div>
           </div>
           <div class="topic-meta">
             ${dateText ? `<span class="topic-date">${dateText}</span>` : ''}
@@ -1497,6 +1493,8 @@ class ReadersTopics extends HTMLElement {
             <span class="arrow-icon">→</span>
           </div>
         `;
+
+        row.querySelector(".topic-title").textContent = subjectText;
 
         row.addEventListener("click", () => {
           renderDetail(item);
@@ -1546,8 +1544,8 @@ class ReadersTopics extends HTMLElement {
       currentDetailItem = item;
 
       const bookText = item.Book || item.book || '자유 도서/이슈';
-      const subjectText = item.Subject || item.subject || item.Title || item.title || item.Topic || item.topic || '토픽 상세';
-      const topicText = item.Topic || item.topic || item.Content || item.content || '등록된 내용이 없습니다.';
+      const subjectText = String(item.Subject ?? '').trim() || '제목 없음';
+      const topicText = String(item.Topic ?? '');
       const writerText = item.ID || item.id || item.Writer || item.writer || '익명';
       const dateText = formatDate(item.Date || item.date);
 
@@ -1568,15 +1566,14 @@ class ReadersTopics extends HTMLElement {
           </div>
 
           <div class="detail-meta-bar">
-            <span class="detail-badge">${bookText}</span>
-            <span class="detail-writer-info">등록자: <strong>${writerText}</strong> 님</span>
+            <span class="detail-badge"></span>
+            <span class="detail-writer-info">등록자: <strong></strong> 님</span>
           </div>
 
-          <h2 class="detail-title">${subjectText}</h2>
+          <h2 class="detail-title"></h2>
 
           <div class="detail-content-box">
-            <div class="detail-content-label">💬 함께 이야기하고 싶은 Topic</div>
-            <div class="detail-body">${topicText}</div>
+            <div class="detail-body"></div>
           </div>
 
           <div class="detail-footer">
@@ -1607,6 +1604,14 @@ class ReadersTopics extends HTMLElement {
         </div>
       `;
 
+      // Render sheet values as text and preserve the body\'s line breaks.
+      root.querySelector(".detail-badge").textContent = bookText;
+      root.querySelector(".detail-writer-info strong").textContent = writerText;
+      root.querySelector(".detail-title").textContent = subjectText;
+      const detailBody = root.querySelector(".detail-body");
+      detailBody.textContent = String(topicText).trim() ? topicText : "본문이 비어 있습니다.";
+      detailBody.classList.toggle("is-empty", !String(topicText).trim());
+
       const backBtnTop = root.querySelector("#detail-back-btn-top");
       const backBtnBottom = root.querySelector("#detail-back-btn-bottom");
       const editBtn = root.querySelector("#detail-edit-btn");
@@ -1626,57 +1631,56 @@ class ReadersTopics extends HTMLElement {
       }
 
       if (deleteBtn) {
-        deleteBtn.addEventListener("click", () => {
-          if (!confirm("삭제하시겠습니까?")) {
-            return;
-          }
-
-          const deleted = getDeletedList();
-          deleted.push(item);
-          localStorage.setItem(DELETED_KEY, JSON.stringify(deleted));
-
-          // Also remove any edit overrides
-          const edited = getEditedList().filter(ed => !isSameTopic(ed.oldTopic, item) && !isSameTopic(ed.updatedTopic, item));
-          localStorage.setItem(EDITED_KEY, JSON.stringify(edited));
-
-          topicsData = topicsData.filter(t => !isSameTopic(t, item));
-          localStorage.setItem(CACHE_KEY, JSON.stringify(topicsData));
-
-          // Background request to server
+        deleteBtn.addEventListener("click", async () => {
+          if (deleteBtn.disabled || !confirm("삭제하시겠습니까?")) return;
+          deleteBtn.disabled = true;
           try {
-            fetch(NAV_API_URL, {
+            const res = await fetch(NAV_API_URL, {
               method: "POST",
               mode: "cors",
               headers: { "Content-Type": "text/plain" },
               body: JSON.stringify({
                 action: "deleteTopic",
-                id: currentUser,
-                book: item.Book || item.book,
-                subject: item.Subject || item.subject,
-                topic: item.Topic || item.topic,
-                date: item.Date || item.date
+                id: localStorage.getItem("readers_user_id"),
+                author: item.ID ?? item.id ?? item.Writer ?? item.writer ?? "",
+                book: item.Book ?? item.book ?? "",
+                subject: item.Subject ?? item.subject ?? "",
+                topic: item.Topic ?? item.topic ?? "",
+                date: item.Date ?? item.date ?? ""
               })
-            }).catch(err => console.warn("Backend deleteTopic:", err));
-          } catch (e) {}
-
-          window.dispatchEvent(new CustomEvent("readers-topic-deleted", { detail: item }));
-          alert("토픽이 삭제되었습니다.");
-          renderList();
+            });
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            const result = await res.json();
+            if (!result.success) throw new Error(result.error || "토픽 삭제에 실패했습니다.");
+            topicsData = topicsData.filter(t => t !== item);
+            localStorage.setItem(CACHE_KEY, JSON.stringify(topicsData));
+            window.dispatchEvent(new CustomEvent("readers-topic-deleted", { detail: item }));
+            renderList();
+            alert("토픽이 삭제되었습니다.");
+          } catch (err) {
+            alert(err.message || "토픽 삭제에 실패했습니다.");
+          } finally {
+            deleteBtn.disabled = false;
+          }
         });
       }
     };
 
     const loadData = () => {
       fetch(NAV_API_URL + "?action=getTopics")
-        .then(res => res.json())
+        .then(res => {
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          return res.json();
+        })
         .then(data => {
-          if (!Array.isArray(data)) return;
+          if (!Array.isArray(data)) throw new Error(data?.error || "토픽 조회 응답 형식이 올바르지 않습니다.");
           // Reversing the array places the latest registered topics at the top
           data.reverse();
 
-          const processed = applyLocalOverrides(data);
+          // A successful sheet response takes precedence over stale local edits.
+          const processed = data;
           const hasUpdates = JSON.stringify(processed) !== JSON.stringify(topicsData);
-          if (hasUpdates) {
+          if (hasUpdates || !root.querySelector(".topic-item, .topic-detail-view")) {
             topicsData = processed;
             localStorage.setItem(CACHE_KEY, JSON.stringify(topicsData));
             if (!currentDetailItem) {
@@ -1686,21 +1690,25 @@ class ReadersTopics extends HTMLElement {
               if (matched) {
                 currentDetailItem = matched;
                 renderDetail(matched);
+              } else {
+                renderList();
               }
             }
           }
         })
         .catch(err => {
           console.error("Failed to load topics in background", err);
+          if (topicsData.length === 0) {
+            root.textContent = "토픽을 불러오지 못했습니다. 새로고침하여 다시 시도해 주세요.";
+          }
         });
     };
 
-    const CACHE_KEY = "readers_topics_cache";
     const cached = localStorage.getItem(CACHE_KEY);
     if (cached) {
       try {
         const rawCached = JSON.parse(cached);
-        topicsData = applyLocalOverrides(rawCached);
+        topicsData = Array.isArray(rawCached) ? rawCached : [];
         renderList();
       } catch (e) {
         console.error("Failed to parse topics cache", e);
@@ -1918,19 +1926,15 @@ function loadLatestMeeting(forceRefresh) {
     renderMeeting(cachedData.meeting);
   }
 
-  // 2. If cache is valid and not forced, keep rendered cache and return (no network request needed!)
-  if (!forceRefresh && hasCachedMeeting && isMeetingCacheValid(cachedData.meeting)) {
-    return;
-  }
-
-  // 3. Otherwise (expired or forced or no cache), fetch fresh data from API
+  // Always refresh from the sheet after displaying cached content.
   fetch(NAV_API_URL + "?action=getMeetings")
     .then(function(res) {
       if (!res.ok) throw new Error("HTTP " + res.status);
       return res.json();
     })
     .then(function(data) {
-      if (Array.isArray(data) && data.length > 0) {
+      if (!Array.isArray(data)) throw new Error(data?.error || "모임 조회 응답 형식이 올바르지 않습니다.");
+      if (data.length > 0) {
         var latest = data[data.length - 1];
         localStorage.setItem(MEETING_CACHE_KEY, JSON.stringify({
           meeting: latest,
@@ -1938,10 +1942,8 @@ function loadLatestMeeting(forceRefresh) {
         }));
         renderMeeting(latest);
       } else {
-        // ONLY render error if we don't already have a valid cached meeting
-        if (!hasCachedMeeting) {
-          renderMeetingError("등록된 모임이 없습니다");
-        }
+        localStorage.removeItem(MEETING_CACHE_KEY);
+        renderMeetingError("등록된 모임이 없습니다");
       }
     })
     .catch(function(err) {
