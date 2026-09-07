@@ -71,26 +71,34 @@ class ReadersNav extends HTMLElement {
       </div>
 
       <!-- Topic Registration Modal Overlay -->
-      <div id="topic-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
-        <div style="background:white; padding:32px; border-radius:12px; width:420px; box-shadow:0 20px 40px rgba(0,0,0,0.2); box-sizing:border-box; font-family:'Noto Sans KR',sans-serif; position:relative; color: #333;">
-          <button id="topic-modal-close-btn" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:22px; cursor:pointer; color:#999; line-height:1;">&times;</button>
+      <div id="topic-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center; backdrop-filter:blur(4px); padding:20px; box-sizing:border-box;">
+        <div style="background:white; padding:36px 36px 32px; border-radius:14px; width:620px; max-width:100%; max-height:92vh; overflow-y:auto; box-shadow:0 24px 48px rgba(0,0,0,0.25); box-sizing:border-box; font-family:'Noto Sans KR',sans-serif; position:relative; color: #333;">
+          <button id="topic-modal-close-btn" style="position:absolute; top:20px; right:20px; background:none; border:none; font-size:24px; cursor:pointer; color:#999; line-height:1;">&times;</button>
           
-          <h3 style="margin:0 0 4px; font-size:18px; font-weight:700; color:#2A6B52;">Topic 등록하기</h3>
-          <div id="topic-user-display" style="font-size:13px; color:#666; margin-bottom:24px; font-weight:500;">등록자: 님</div>
+          <h3 style="margin:0 0 6px; font-size:20px; font-weight:700; color:#2A6B52;">Topic 등록하기</h3>
+          <div id="topic-user-display" style="font-size:13.5px; color:#666; margin-bottom:22px; font-weight:500;">등록자: 님</div>
           
-           <div style="margin-bottom:20px;">
-             <label style="display:block; font-size:13px; color:#444; margin-bottom:8px; font-weight:600;">어떤 작품, 이슈에 대한 토픽인가요?</label>
-             <input type="text" id="topic-book-input" placeholder="작품명 또는 이슈를 입력해 주세요" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px; outline:none; font-family:inherit;">
-           </div>
-          
-          <div style="margin-bottom:24px;">
-            <label style="display:block; font-size:13px; color:#444; margin-bottom:8px; font-weight:600;">이 Topic에 대해 함께 이야기 나누고 싶은 내용을 알려 주세요</label>
-            <textarea id="topic-content-input" placeholder="이야기 나누고 싶은 질문이나 토픽 내용을 입력해 주세요." style="width:100%; height:120px; padding:12px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px; outline:none; font-family:inherit; resize: none; line-height:1.5;"></textarea>
+          <div style="margin-bottom:18px;">
+            <label style="display:block; font-size:13.5px; color:#374151; margin-bottom:7px; font-weight:600;">어떤 작품, 이슈에 대한 토픽인가요?</label>
+            <input type="text" id="topic-book-input" placeholder="작품명 또는 이슈를 입력해 주세요 (예: 히가시노 게이고 소설, 독서 모임 주제 등)" style="width:100%; padding:11px 14px; border:1px solid #D1D5DB; border-radius:8px; box-sizing:border-box; font-size:14.5px; outline:none; font-family:inherit;">
+          </div>
+
+          <div style="margin-bottom:18px;">
+            <label style="display:block; font-size:13.5px; color:#374151; margin-bottom:7px; font-weight:600;">제목</label>
+            <input type="text" id="topic-subject-input" placeholder="토픽의 핵심 제목을 입력해 주세요" style="width:100%; padding:11px 14px; border:1px solid #D1D5DB; border-radius:8px; box-sizing:border-box; font-size:14.5px; outline:none; font-family:inherit;">
           </div>
           
-          <div id="topic-modal-error-msg" style="color:#d93025; font-size:12px; margin-bottom:16px; display:none; line-height:1.4;"></div>
+          <div style="margin-bottom:24px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:7px;">
+              <label style="display:block; font-size:13.5px; color:#374151; font-weight:600;">함께 이야기하고 싶은 Topic을 입력해 주세요.</label>
+              <span style="font-size:12px; color:#6B7280;">(300~400자 권장)</span>
+            </div>
+            <textarea id="topic-content-input" placeholder="함께 이야기 나누고 싶은 질문이나 토픽 내용을 자세히 입력해 주세요." style="width:100%; height:220px; min-height:180px; padding:14px 16px; border:1px solid #D1D5DB; border-radius:8px; box-sizing:border-box; font-size:14.5px; outline:none; font-family:inherit; resize: vertical; line-height:1.65;"></textarea>
+          </div>
           
-          <button id="topic-modal-submit-btn" style="width:100%; background:#2A6B52; color:white; border:none; padding:12px; border-radius:6px; font-weight:600; font-size:14px; cursor:pointer; transition:background 0.2s ease;">등록하기</button>
+          <div id="topic-modal-error-msg" style="color:#d93025; font-size:12.5px; margin-bottom:16px; display:none; line-height:1.4;"></div>
+          
+          <button id="topic-modal-submit-btn" style="width:100%; background:#2A6B52; color:white; border:none; padding:14px; border-radius:8px; font-weight:700; font-size:15px; cursor:pointer; transition:background 0.2s ease;">등록하기</button>
         </div>
       </div>
 
@@ -322,6 +330,7 @@ class ReadersNav extends HTMLElement {
     const topicSubmitBtn = shadow.getElementById("topic-modal-submit-btn");
     const topicUserDisplay = shadow.getElementById("topic-user-display");
     const bookInput = shadow.getElementById("topic-book-input");
+    const subjectInput = shadow.getElementById("topic-subject-input");
     const contentInput = shadow.getElementById("topic-content-input");
     const topicErrorMsg = shadow.getElementById("topic-modal-error-msg");
 
@@ -465,6 +474,7 @@ class ReadersNav extends HTMLElement {
     const openTopicModal = (username) => {
       topicUserDisplay.textContent = `등록자: ${username} 님`;
       bookInput.value = "";
+      subjectInput.value = "";
       contentInput.value = "";
       topicErrorMsg.style.display = "none";
       topicModal.style.display = "flex";
@@ -474,7 +484,7 @@ class ReadersNav extends HTMLElement {
     window.addEventListener("open-topic-modal", () => {
       const savedUser = localStorage.getItem("readers_user_id");
       if (!savedUser) {
-        alert("질문을 등록하려면 먼저 로그인이 필요합니다.");
+        alert("Topic을 등록하려면 먼저 로그인이 필요합니다.");
         // Auto open login modal
         errorMsg.style.display = "none";
         idInput.value = "";
@@ -497,6 +507,7 @@ class ReadersNav extends HTMLElement {
       }
 
       const bookVal = bookInput.value.trim();
+      const subjectVal = subjectInput.value.trim();
       const topicVal = contentInput.value.trim();
       topicErrorMsg.style.display = "none";
 
@@ -505,8 +516,13 @@ class ReadersNav extends HTMLElement {
         topicErrorMsg.style.display = "block";
         return;
       }
+      if (!subjectVal) {
+        topicErrorMsg.textContent = "제목을 입력해 주세요.";
+        topicErrorMsg.style.display = "block";
+        return;
+      }
       if (!topicVal) {
-        topicErrorMsg.textContent = "질문 내용을 입력해 주세요.";
+        topicErrorMsg.textContent = "Topic 내용을 입력해 주세요.";
         topicErrorMsg.style.display = "block";
         return;
       }
@@ -525,18 +541,20 @@ class ReadersNav extends HTMLElement {
             action: "addTopic",
             id: savedUser,
             book: bookVal,
+            subject: subjectVal,
             topic: topicVal
           })
         });
         const result = await res.json();
         if (!result.success) {
-          throw new Error(result.error || "질문 등록에 실패했습니다.");
+          throw new Error(result.error || "Topic 등록에 실패했습니다.");
         }
 
         const optimisticTopic = {
           ID: savedUser,
           Date: new Date().toISOString().slice(0, 10).replace(/-/g, ""),
           Book: bookVal,
+          Subject: subjectVal,
           Topic: topicVal
         };
 
@@ -990,25 +1008,35 @@ class ReadersTopics extends HTMLElement {
         .topic-list {
           display: flex;
           flex-direction: column;
-          gap: 16px;
+          gap: 14px;
           width: 100%;
         }
         .topic-item {
-          background: #FCFCFC;
-          border: 1px solid #ECECEC;
+          background: #FFFFFF;
+          border: 1px solid #E5E7EB;
           border-radius: 12px;
-          padding: 20px 24px;
+          padding: 18px 22px;
           display: flex;
           align-items: center;
-          gap: 24px;
+          gap: 20px;
           box-sizing: border-box;
-          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          cursor: pointer;
+          transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+          user-select: none;
         }
         .topic-item:hover {
           background: #F7FAF9;
           border-color: #2A6B52;
           transform: translateY(-2px);
-          box-shadow: 0 6px 16px rgba(42, 107, 82, 0.06);
+          box-shadow: 0 6px 18px rgba(42, 107, 82, 0.08);
+        }
+        .topic-item:hover .topic-title {
+          color: #2A6B52;
+        }
+        .topic-item:hover .arrow-icon {
+          transform: translateX(4px);
+          color: #2A6B52;
         }
         .book-badge {
           background: #E8F0ED;
@@ -1017,54 +1045,222 @@ class ReadersTopics extends HTMLElement {
           padding: 6px 14px;
           border-radius: 6px;
           font-size: 13px;
-          min-width: 100px;
+          min-width: 90px;
           max-width: 160px;
           text-align: center;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          flex-shrink: 0;
         }
-        .topic-text {
-          font-size: 15px;
-          color: #333;
-          line-height: 1.6;
+        .topic-main {
           flex: 1;
-          font-weight: 500;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          min-width: 0;
+        }
+        .topic-title {
+          font-size: 16px;
+          color: #1F2937;
+          font-weight: 600;
+          line-height: 1.4;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          transition: color 0.15s ease;
+        }
+        .topic-meta {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          flex-shrink: 0;
         }
         .user-id {
           font-size: 13px;
-          color: oklch(0.5 0.02 60);
+          color: #4B5563;
           white-space: nowrap;
           font-weight: 600;
-          margin-left: 12px;
         }
+        .topic-date {
+          font-size: 12px;
+          color: #9CA3AF;
+          white-space: nowrap;
+        }
+        .arrow-icon {
+          font-size: 16px;
+          color: #D1D5DB;
+          font-weight: 700;
+          transition: transform 0.2s ease, color 0.2s ease;
+          flex-shrink: 0;
+          margin-left: 4px;
+        }
+
+        /* Detail View Styles */
+        .topic-detail-view {
+          background: #FFFFFF;
+          border: 1px solid #E5E7EB;
+          border-radius: 12px;
+          padding: 28px 32px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+          animation: fadeIn 0.25s ease-out;
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(6px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .detail-top-nav {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 24px;
+          padding-bottom: 16px;
+          border-bottom: 1px solid #F3F4F6;
+        }
+        .back-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: #F3F4F6;
+          color: #374151;
+          border: 1px solid #E5E7EB;
+          padding: 8px 16px;
+          border-radius: 6px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          font-family: inherit;
+        }
+        .back-btn:hover {
+          background: #2A6B52;
+          color: #FFFFFF;
+          border-color: #2A6B52;
+        }
+        .detail-meta-bar {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+          margin-bottom: 16px;
+        }
+        .detail-badge {
+          background: #E8F0ED;
+          color: #2A6B52;
+          font-weight: 700;
+          padding: 6px 12px;
+          border-radius: 6px;
+          font-size: 13px;
+        }
+        .detail-writer-info {
+          font-size: 13px;
+          color: #6B7280;
+        }
+        .detail-writer-info strong {
+          color: #1F2937;
+          font-weight: 600;
+        }
+        .detail-title {
+          font-size: 22px;
+          font-weight: 700;
+          color: #111827;
+          line-height: 1.4;
+          margin: 0 0 20px;
+          font-family: 'Noto Sans KR', sans-serif;
+        }
+        .detail-content-box {
+          background: #FAFDFB;
+          border: 1px solid #E2E8F0;
+          border-radius: 8px;
+          padding: 22px 24px;
+          margin-bottom: 24px;
+        }
+        .detail-content-label {
+          font-size: 12px;
+          font-weight: 700;
+          color: #2A6B52;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          margin-bottom: 10px;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+        .detail-body {
+          font-size: 15px;
+          line-height: 1.75;
+          color: #2D3748;
+          white-space: pre-wrap;
+          word-break: break-word;
+          margin: 0;
+        }
+        .detail-footer {
+          display: flex;
+          justify-content: flex-end;
+          padding-top: 12px;
+        }
+
         @media (max-width: 680px) {
           .topic-item {
             flex-direction: column;
             align-items: flex-start;
-            gap: 12px;
+            gap: 10px;
+            padding: 16px;
           }
           .book-badge {
             align-self: flex-start;
             min-width: unset;
             max-width: 100%;
           }
-          .user-id {
-            align-self: flex-end;
-            margin-left: 0;
+          .topic-meta {
+            width: 100%;
+            justify-content: space-between;
+          }
+          .arrow-icon {
+            display: none;
+          }
+          .topic-detail-view {
+            padding: 20px 18px;
+          }
+          .detail-title {
+            font-size: 18px;
           }
         }
       </style>
-      <div id="topics-container" class="topic-list">
-        <div style="text-align: center; color: oklch(0.5 0.02 60); font-size: 14px; padding: 40px 0;">질문 목록을 불러오는 중입니다...</div>
+      <div id="topics-root">
+        <div id="topics-container" class="topic-list">
+          <div style="text-align: center; color: oklch(0.5 0.02 60); font-size: 14px; padding: 40px 0;">토픽 목록을 불러오는 중입니다...</div>
+        </div>
       </div>
     `;
 
     let topicsData = [];
+    let currentDetailItem = null;
     let rollInterval = null;
-    const container = shadow.getElementById("topics-container");
+    const root = shadow.getElementById("topics-root");
 
-    const startRolling = () => {
+    const formatDate = (val) => {
+      if (!val) return '';
+      const str = String(val).trim();
+      if (/^\d{8}$/.test(str)) {
+        return `${str.slice(0, 4)}.${str.slice(4, 6)}.${str.slice(6, 8)}`;
+      }
+      if (str.includes('T')) {
+        const d = new Date(str);
+        if (!isNaN(d.getTime())) {
+          const y = d.getFullYear();
+          const m = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          return `${y}.${m}.${day}`;
+        }
+      }
+      if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+        return str.slice(0, 10).replace(/-/g, '.');
+      }
+      return str;
+    };
+
+    const startRolling = (container) => {
       if (rollInterval) clearInterval(rollInterval);
       if (topicsData.length <= 3) {
         container.style.maxHeight = "";
@@ -1078,7 +1274,7 @@ class ReadersTopics extends HTMLElement {
 
         // Slide up smoothly
         firstChild.style.transition = "margin-top 0.8s ease, opacity 0.8s ease";
-        firstChild.style.marginTop = `-${firstChild.offsetHeight + 16}px`; // 16px is gap
+        firstChild.style.marginTop = `-${firstChild.offsetHeight + 14}px`; // 14px is gap
         firstChild.style.opacity = "0";
 
         setTimeout(() => {
@@ -1089,54 +1285,81 @@ class ReadersTopics extends HTMLElement {
           // Move to the end of the list
           container.appendChild(firstChild);
         }, 800);
-      }, 3500); // Shift every 3.5 seconds
+      }, 4000); // Shift every 4 seconds
     };
 
-    // Pause on hover, resume on mouse leave
-    container.addEventListener("mouseenter", () => {
+    const renderList = () => {
       if (rollInterval) clearInterval(rollInterval);
-    });
-    container.addEventListener("mouseleave", () => {
-      startRolling();
-    });
+      currentDetailItem = null;
 
-    const renderTopics = () => {
-      if (rollInterval) clearInterval(rollInterval);
-      container.innerHTML = "";
+      root.innerHTML = `<div id="topics-container" class="topic-list"></div>`;
+      const container = root.querySelector("#topics-container");
+
       if (topicsData.length === 0) {
-        container.innerHTML = `<div style="text-align: center; color: oklch(0.5 0.02 60); font-size: 14px; padding: 40px 0;">등록된 질문이 없습니다. 첫 질문을 등록해 보세요!</div>`;
+        container.innerHTML = `<div style="text-align: center; color: oklch(0.5 0.02 60); font-size: 14px; padding: 40px 0;">등록된 토픽이 없습니다. 첫 번째 토픽을 등록해 보세요!</div>`;
         return;
       }
 
-      topicsData.forEach(item => {
+      topicsData.forEach((item) => {
+        const bookText = item.Book || item.book || '자유 도서/이슈';
+        const subjectText = item.Subject || item.subject || item.Title || item.title || item.Topic || item.topic || '제목 없음';
+        const writerText = item.ID || item.id || item.Writer || item.writer || '익명';
+        const dateText = formatDate(item.Date || item.date);
+
         const row = document.createElement("div");
         row.className = "topic-item";
+        row.setAttribute("role", "button");
+        row.setAttribute("tabindex", "0");
+        row.title = "클릭하여 내용 보기";
         row.innerHTML = `
-          <div class="book-badge" title="${item.Book || '자유 선택'}">
-            ${item.Book || '자유 선택'}
+          <div class="book-badge" title="${bookText}">
+            ${bookText}
           </div>
-          <div class="topic-text">
-            ${item.Topic || '질문 내용이 없습니다.'}
+          <div class="topic-main">
+            <div class="topic-title">${subjectText}</div>
           </div>
-          <div class="user-id">
-            — ${item.ID || '익명'}
+          <div class="topic-meta">
+            ${dateText ? `<span class="topic-date">${dateText}</span>` : ''}
+            <span class="user-id">— ${writerText}</span>
+            <span class="arrow-icon">→</span>
           </div>
         `;
+
+        row.addEventListener("click", () => {
+          renderDetail(item);
+        });
+        row.addEventListener("keydown", (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            renderDetail(item);
+          }
+        });
+
         container.appendChild(row);
       });
 
-      // Show exactly 3 items, hide and roll the rest
+      // Pause rolling on hover, resume on mouse leave
+      container.addEventListener("mouseenter", () => {
+        if (rollInterval) clearInterval(rollInterval);
+      });
+      container.addEventListener("mouseleave", () => {
+        if (!currentDetailItem) {
+          startRolling(container);
+        }
+      });
+
+      // Show exactly 3 items, roll the rest
       if (topicsData.length > 3) {
         setTimeout(() => {
           const items = container.querySelectorAll(".topic-item");
           if (items.length > 3) {
             let totalHeight = 0;
             for (let i = 0; i < 3; i++) {
-              totalHeight += items[i].offsetHeight + 16; // height + gap
+              totalHeight += items[i].offsetHeight + 14; // height + gap
             }
-            container.style.maxHeight = `${totalHeight - 16}px`;
+            container.style.maxHeight = `${totalHeight - 14}px`;
             container.style.overflow = "hidden";
-            startRolling();
+            startRolling(container);
           }
         }, 150);
       } else {
@@ -1145,10 +1368,61 @@ class ReadersTopics extends HTMLElement {
       }
     };
 
+    const renderDetail = (item) => {
+      if (rollInterval) clearInterval(rollInterval);
+      currentDetailItem = item;
+
+      const bookText = item.Book || item.book || '자유 도서/이슈';
+      const subjectText = item.Subject || item.subject || item.Title || item.title || item.Topic || item.topic || '토픽 상세';
+      const topicText = item.Topic || item.topic || item.Content || item.content || '등록된 내용이 없습니다.';
+      const writerText = item.ID || item.id || item.Writer || item.writer || '익명';
+      const dateText = formatDate(item.Date || item.date);
+
+      root.innerHTML = `
+        <div class="topic-detail-view">
+          <div class="detail-top-nav">
+            <button type="button" class="back-btn" id="detail-back-btn-top">
+              ← 목록으로 돌아가기
+            </button>
+            ${dateText ? `<div class="topic-date">등록일: ${dateText}</div>` : ''}
+          </div>
+
+          <div class="detail-meta-bar">
+            <span class="detail-badge">${bookText}</span>
+            <span class="detail-writer-info">등록자: <strong>${writerText}</strong> 님</span>
+          </div>
+
+          <h2 class="detail-title">${subjectText}</h2>
+
+          <div class="detail-content-box">
+            <div class="detail-content-label">💬 함께 이야기하고 싶은 Topic</div>
+            <div class="detail-body">${topicText}</div>
+          </div>
+
+          <div class="detail-footer">
+            <button type="button" class="back-btn" id="detail-back-btn-bottom">
+              ← 전체 목록 보기
+            </button>
+          </div>
+        </div>
+      `;
+
+      const backBtnTop = root.querySelector("#detail-back-btn-top");
+      const backBtnBottom = root.querySelector("#detail-back-btn-bottom");
+
+      const handleBack = () => {
+        renderList();
+      };
+
+      if (backBtnTop) backBtnTop.addEventListener("click", handleBack);
+      if (backBtnBottom) backBtnBottom.addEventListener("click", handleBack);
+    };
+
     const loadData = () => {
       fetch(NAV_API_URL + "?action=getTopics")
         .then(res => res.json())
         .then(data => {
+          if (!Array.isArray(data)) return;
           // Reversing the array places the latest registered topics at the top
           data.reverse();
 
@@ -1156,7 +1430,9 @@ class ReadersTopics extends HTMLElement {
           if (hasUpdates) {
             topicsData = data;
             localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-            renderTopics();
+            if (!currentDetailItem) {
+              renderList();
+            }
           }
         })
         .catch(err => {
@@ -1169,7 +1445,7 @@ class ReadersTopics extends HTMLElement {
     if (cached) {
       try {
         topicsData = JSON.parse(cached);
-        renderTopics();
+        renderList();
       } catch (e) {
         console.error("Failed to parse topics cache", e);
       }
@@ -1181,9 +1457,11 @@ class ReadersTopics extends HTMLElement {
     window.addEventListener("readers-topic-added", (e) => {
       if (e.detail) {
         // Optimistic UI Update: Prepend newly added topic immediately
-        topicsData = [e.detail, ...topicsData.filter(item => !(item.Topic === e.detail.Topic && item.ID === e.detail.ID))];
+        topicsData = [e.detail, ...topicsData.filter(item => !(item.Topic === e.detail.Topic && item.ID === e.detail.ID && item.Subject === e.detail.Subject))];
         localStorage.setItem(CACHE_KEY, JSON.stringify(topicsData));
-        renderTopics();
+        if (!currentDetailItem) {
+          renderList();
+        }
       }
       loadData();
     });
