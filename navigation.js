@@ -1,6 +1,67 @@
 ﻿(() => {
 const NAV_API_URL = "https://script.google.com/macros/s/AKfycbxAOsg5g3sr2w4HrbpSMXc51hbC96h0cYnzoZoEq3v4-4lOjrWi2DnMuMY_CSG82XfNJA/exec";
 
+async function topicRequestJSON(url, options = {}, timeout = 15000) {
+  const controller = new AbortController();
+  let timer;
+  try {
+    return await Promise.race([
+      (async () => {
+        const response = await fetch(url, { ...options, signal: controller.signal });
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        return await response.json();
+      })(),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error("응답 대기 시간이 초과되었습니다."));
+          controller.abort();
+        }, timeout);
+      })
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function registerTopic(payload) {
+  const matches = item => String(item.ID ?? "") === payload.id &&
+    String(item.Book ?? "") === payload.book &&
+    String(item.Subject ?? "") === payload.subject &&
+    String(item.Topic ?? "") === payload.topic;
+  const readTopics = async () => {
+    const rows = await topicRequestJSON(NAV_API_URL + "?action=getTopics&_=" + Date.now());
+    if (!Array.isArray(rows)) throw new Error(rows?.error || "토픽 조회 응답 오류");
+    return rows;
+  };
+  // A baseline prevents an older identical post from confirming a failed write.
+  let previousCount = null;
+  try { previousCount = (await readTopics()).filter(matches).length; } catch (err) {
+    console.warn("Topic preflight read:", err);
+  }
+  let result;
+  try {
+    result = await topicRequestJSON(NAV_API_URL, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ action: "addTopic", ...payload })
+    });
+  } catch (err) {
+    try {
+      const matching = (await readTopics()).filter(matches);
+      if (previousCount !== null && matching.length > previousCount) {
+        return matching[matching.length - 1];
+      }
+    } catch (readError) { console.warn("Topic verification:", readError); }
+    throw new Error("저장 결과를 확인하지 못했습니다. 중복 등록을 피하려면 목록을 새로고침해 확인한 후 다시 시도해 주세요.");
+  }
+  if (!result.success) throw new Error(result.error || "Topic 등록에 실패했습니다.");
+  return {
+    ID: payload.id, Book: payload.book, Subject: payload.subject, Topic: payload.topic,
+    Date: new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Seoul" }).format(new Date())
+  };
+}
+
 class ReadersNav extends HTMLElement {
   connectedCallback() {
     // Check if we are on the index page
@@ -599,36 +660,11 @@ class ReadersNav extends HTMLElement {
           editingTopicData = null;
           alert("Topic이 성공적으로 수정되었습니다!");
         } else {
-          const res = await fetch(NAV_API_URL, {
-            method: "POST",
-            mode: "cors",
-            headers: {
-              "Content-Type": "text/plain"
-            },
-            body: JSON.stringify({
-              action: "addTopic",
-              id: savedUser,
-              book: bookVal,
-              subject: subjectVal,
-              topic: topicVal
-            })
+          const registeredTopic = await registerTopic({
+            id: savedUser, book: bookVal, subject: subjectVal, topic: topicVal
           });
-          const result = await res.json();
-          if (!result.success) {
-            throw new Error(result.error || "Topic 등록에 실패했습니다.");
-          }
-
-          const optimisticTopic = {
-            ID: savedUser,
-            Date: new Date().toISOString().slice(0, 10).replace(/-/g, ""),
-            Book: bookVal,
-            Subject: subjectVal,
-            Topic: topicVal
-          };
-
           topicModal.style.display = "none";
-          alert("Topic이 성공적으로 등록되었습니다!");
-          window.dispatchEvent(new CustomEvent("readers-topic-added", { detail: optimisticTopic }));
+          window.dispatchEvent(new CustomEvent("readers-topic-added", { detail: registeredTopic }));
         }
       } catch (err) {
         topicErrorMsg.textContent = err.message || err.toString();
@@ -1666,13 +1702,12 @@ class ReadersTopics extends HTMLElement {
       }
     };
 
+    let topicLoadVersion = 0;
     const loadData = () => {
-      fetch(NAV_API_URL + "?action=getTopics")
-        .then(res => {
-          if (!res.ok) throw new Error("HTTP " + res.status);
-          return res.json();
-        })
+      const version = ++topicLoadVersion;
+      topicRequestJSON(NAV_API_URL + "?action=getTopics&_=" + Date.now())
         .then(data => {
+          if (version !== topicLoadVersion) return;
           if (!Array.isArray(data)) throw new Error(data?.error || "토픽 조회 응답 형식이 올바르지 않습니다.");
           // Reversing the array places the latest registered topics at the top
           data.reverse();
@@ -1697,6 +1732,7 @@ class ReadersTopics extends HTMLElement {
           }
         })
         .catch(err => {
+          if (version !== topicLoadVersion) return;
           console.error("Failed to load topics in background", err);
           if (topicsData.length === 0) {
             root.textContent = "토픽을 불러오지 못했습니다. 새로고침하여 다시 시도해 주세요.";
@@ -1722,10 +1758,8 @@ class ReadersTopics extends HTMLElement {
       if (e.detail) {
         // Optimistic UI Update: Prepend newly added topic immediately
         topicsData = [e.detail, ...topicsData.filter(item => !isSameTopic(item, e.detail))];
-        localStorage.setItem(CACHE_KEY, JSON.stringify(topicsData));
-        if (!currentDetailItem) {
-          renderList();
-        }
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify(topicsData)); } catch (err) { console.warn("Topic cache:", err); }
+        renderDetail(e.detail);
       }
       loadData();
     });
