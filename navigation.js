@@ -164,7 +164,7 @@ class ReadersNav extends HTMLElement {
           
           <div style="margin-bottom:18px;">
             <label for="topic-review-input" style="display:block;font-size:13.5px;color:#374151;margin-bottom:7px;font-weight:600;">어떤 부분이 인상 깊었는지 공유해 주세요.</label>
-            <textarea id="topic-review-input" placeholder="인상 깊었던 장면이나 문장, 작품에 대한 소감을 적어 주세요." style="width:100%;height:150px;min-height:100px;padding:14px 16px;border:1px solid #D1D5DB;border-radius:8px;box-sizing:border-box;font-size:14.5px;font-family:inherit;resize:vertical;line-height:1.65;"></textarea>
+            <textarea id="topic-review-input" placeholder="인상 깊었던 장면이나 문장, 작품에 대한 소감을 적어 주세요.&#10;아직 책을 읽지 않은 분에게 추천하는 이유도 알려 주시면 좋습니다~" style="width:100%;height:150px;min-height:100px;padding:14px 16px;border:1px solid #D1D5DB;border-radius:8px;box-sizing:border-box;font-size:14.5px;font-family:inherit;resize:vertical;line-height:1.65;"></textarea>
           </div>
           <div style="margin-bottom:24px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:7px;">
