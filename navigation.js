@@ -924,6 +924,14 @@ class ReadersNav extends HTMLElement {
       }
     });
 
+    // Reset the topic view even when clicking the current section's link again.
+    shadow.addEventListener('click', (event) => {
+      const link = event.target.closest('a[href]');
+      if (link && /#(?:notice|book|discussion|archive)?$/.test(link.getAttribute('href'))) {
+        window.dispatchEvent(new CustomEvent('readers-show-topic-list'));
+      }
+    });
+
     const hamburgerBtn = shadow.getElementById("hamburger-btn");
     const mobileMenu = shadow.getElementById("mobile-menu");
     
@@ -1888,6 +1896,10 @@ class ReadersTopics extends HTMLElement {
     }
 
     loadData();
+
+    window.addEventListener('readers-show-topic-list', () => {
+      if (currentDetailItem) renderList();
+    });
 
     // Listen to custom event when a new topic is added
     window.addEventListener("readers-topic-added", (e) => {
