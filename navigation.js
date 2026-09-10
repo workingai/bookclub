@@ -1205,7 +1205,20 @@ function mountTopicComments(container, topic) {
   sync();load();
 }
 
+
+function topicMonthKey(value) {
+  const text = String(value || '').trim();
+  const match = text.match(/^(\d{4})(?:[-./]\s*|년\s*)?(\d{1,2})(?:[-./월]|\d{2}$)/);
+  if (!match || +match[2] < 1 || +match[2] > 12) return '';
+  return match[1] + '-' + match[2].padStart(2, '0');
+}
+function currentTopicMonth() {
+  const parts = new Intl.DateTimeFormat('en-US', {timeZone:'Asia/Seoul',year:'numeric',month:'2-digit'}).formatToParts(new Date());
+  return parts.find(p=>p.type==='year').value + '-' + parts.find(p=>p.type==='month').value;
+}
+
 class ReadersTopics extends HTMLElement {
+  disconnectedCallback() { this.cleanupTopicMonth?.(); }
   connectedCallback() {
     const shadow = this.attachShadow({ mode: 'open' });
     shadow.innerHTML = `
@@ -1505,7 +1518,6 @@ class ReadersTopics extends HTMLElement {
 
     let topicsData = [];
     let currentDetailItem = null;
-    let rollInterval = null;
     const root = shadow.getElementById("topics-root");
 
     const CACHE_KEY = "readers_topics_cache_v2";
@@ -1575,47 +1587,19 @@ class ReadersTopics extends HTMLElement {
       return str;
     };
 
-    const startRolling = (container) => {
-      if (rollInterval) clearInterval(rollInterval);
-      if (topicsData.length <= 3) {
-        container.style.maxHeight = "";
-        container.style.overflow = "";
-        return;
-      }
-
-      rollInterval = setInterval(() => {
-        const firstChild = container.querySelector(".topic-item");
-        if (!firstChild) return;
-
-        // Slide up smoothly
-        firstChild.style.transition = "margin-top 0.8s ease, opacity 0.8s ease";
-        firstChild.style.marginTop = `-${firstChild.offsetHeight + 14}px`; // 14px is gap
-        firstChild.style.opacity = "0";
-
-        setTimeout(() => {
-          // Reset styles
-          firstChild.style.transition = "";
-          firstChild.style.marginTop = "";
-          firstChild.style.opacity = "";
-          // Move to the end of the list
-          container.appendChild(firstChild);
-        }, 800);
-      }, 4000); // Shift every 4 seconds
-    };
-
     const renderList = () => {
-      if (rollInterval) clearInterval(rollInterval);
       currentDetailItem = null;
 
       root.innerHTML = `<div id="topics-container" class="topic-list"></div>`;
       const container = root.querySelector("#topics-container");
 
-      if (topicsData.length === 0) {
-        container.innerHTML = `<div style="text-align: center; color: oklch(0.5 0.02 60); font-size: 14px; padding: 40px 0;">등록된 토픽이 없습니다. 첫 번째 토픽을 등록해 보세요!</div>`;
+      const visibleTopics = topicsData.filter(item => topicMonthKey(item.Date || item.date) === currentTopicMonth());
+      if (visibleTopics.length === 0) {
+        container.innerHTML = `<div style="text-align: center; color: oklch(0.5 0.02 60); font-size: 14px; padding: 40px 0;">이번 달에 등록된 토픽이 없습니다. 첫 번째 토픽을 등록해 보세요!</div>`;
         return;
       }
 
-      topicsData.forEach((item) => {
+      visibleTopics.forEach((item) => {
         const bookText = item.Book || item.book || '자유 도서/이슈';
         const subjectText = String(item.Subject ?? '').trim() || '제목 없음';
         const writerText = item.ID || item.id || item.Writer || item.writer || '익명';
@@ -1655,38 +1639,10 @@ class ReadersTopics extends HTMLElement {
         container.appendChild(row);
       });
 
-      // Pause rolling on hover, resume on mouse leave
-      container.addEventListener("mouseenter", () => {
-        if (rollInterval) clearInterval(rollInterval);
-      });
-      container.addEventListener("mouseleave", () => {
-        if (!currentDetailItem) {
-          startRolling(container);
-        }
-      });
-
-      // Show exactly 3 items, roll the rest
-      if (topicsData.length > 3) {
-        setTimeout(() => {
-          const items = container.querySelectorAll(".topic-item");
-          if (items.length > 3) {
-            let totalHeight = 0;
-            for (let i = 0; i < 3; i++) {
-              totalHeight += items[i].offsetHeight + 14; // height + gap
-            }
-            container.style.maxHeight = `${totalHeight - 14}px`;
-            container.style.overflow = "hidden";
-            startRolling(container);
-          }
-        }, 150);
-      } else {
-        container.style.maxHeight = "";
-        container.style.overflow = "";
-      }
     };
 
     const renderDetail = (item) => {
-      if (rollInterval) clearInterval(rollInterval);
+      if (topicMonthKey(item.Date || item.date) !== currentTopicMonth()) { renderList(); return; }
       currentDetailItem = item;
 
       const bookText = item.Book || item.book || '자유 도서/이슈';
@@ -1900,6 +1856,16 @@ class ReadersTopics extends HTMLElement {
     window.addEventListener('readers-show-topic-list', () => {
       if (currentDetailItem) renderList();
     });
+
+    let displayedMonth = currentTopicMonth();
+    const checkTopicMonth = () => {
+      if (!this.isConnected) return;
+      const month = currentTopicMonth();
+      if (month !== displayedMonth) { displayedMonth = month; renderList(); loadData(); }
+    };
+    const monthTimer = setInterval(checkTopicMonth, 60000);
+    document.addEventListener('visibilitychange', checkTopicMonth);
+    this.cleanupTopicMonth = () => { clearInterval(monthTimer); document.removeEventListener('visibilitychange', checkTopicMonth); };
 
     // Listen to custom event when a new topic is added
     window.addEventListener("readers-topic-added", (e) => {
