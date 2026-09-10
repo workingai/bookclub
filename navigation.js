@@ -30,47 +30,47 @@ async function topicRequestJSON(url, options = {}, timeout = 15000) {
   }
 }
 
-async function registerTopic(payload) {
-  const matches = item => String(item.ID ?? "") === payload.id &&
-    String(item.Book ?? "") === payload.book &&
-    String(item.Subject ?? "") === payload.subject &&
-    String(item.Topic ?? "") === payload.topic &&
-    String(item.URL ?? "") === payload.url && String(item.Review ?? "") === payload.review;
-  const readTopics = async () => {
-    const rows = await topicRequestJSON(NAV_API_URL + "?action=getTopics&_=" + Date.now());
-    if (!Array.isArray(rows)) throw new Error(rows?.error || "토픽 조회 응답 오류");
+async function registerTopic(payload, onStatus = () => {}) {
+  const matches = item => ['ID','Book','Subject','Topic','URL','Review'].every((field, index) =>
+    String(item[field] ?? '') === String(payload[['id','book','subject','topic','url','review'][index]] ?? ''));
+  const readTopics = async timeout => {
+    const rows = await topicRequestJSON(NAV_API_URL + '?action=getTopics&_=' + Date.now(), {}, timeout);
+    if (!Array.isArray(rows)) throw new Error(rows?.error || '토픽 조회 응답 오류');
     return rows;
   };
-  // A baseline prevents an older identical post from confirming a failed write.
+  // Keep a bounded baseline so an existing identical post cannot confirm this write.
+  let previousIds = null;
   let previousCount = null;
-  try { previousCount = (await readTopics()).filter(matches).length; } catch (err) {
-    console.warn("Topic preflight read:", err);
-  }
+  onStatus('등록 준비 중…');
+  try {
+    const before = await readTopics(3000);
+    previousIds = new Set(before.map(item => item['Topic ID']).filter(Boolean));
+    previousCount = before.filter(matches).length;
+  } catch (_) { /* Still allow registration when the baseline read is unavailable. */ }
+  onStatus('등록 중…');
   let result;
   try {
     result = await topicRequestJSON(NAV_API_URL, {
-      method: "POST",
-      mode: "cors",
-      headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify({ action: "addTopic", ...payload })
-    });
-  } catch (err) {
-    try {
-      const matching = (await readTopics()).filter(matches);
-      if (previousCount !== null && matching.length > previousCount) {
-        return matching[matching.length - 1];
-      }
-    } catch (readError) { console.warn("Topic verification:", readError); }
-    throw new Error("저장 결과를 확인하지 못했습니다. 중복 등록을 피하려면 목록을 새로고침해 확인한 후 다시 시도해 주세요.");
-  }
-  if (!result.success) throw new Error(result.error || "Topic 등록에 실패했습니다.");
-  return result.topic || {
-    ID: payload.id, Book: payload.book, Subject: payload.subject, Topic: payload.topic,
-    URL: payload.url, Review: payload.review,
-    Date: new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Seoul" }).format(new Date())
+      method: 'POST', mode: 'cors', headers: {'Content-Type':'text/plain'},
+      body: JSON.stringify({action:'addTopic', ...payload})
+    }, 7000);
+  } catch (_) { /* Check the sheet because a lost response can follow a successful write. */ }
+  if (result?.success) return result.topic || {
+    ID:payload.id, Book:payload.book, Subject:payload.subject, Topic:payload.topic,
+    URL:payload.url, Review:payload.review,
+    Date:new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(new Date())
   };
+  if (result?.success === false) throw new Error(result.error || '등록에 실패했습니다. 입력 내용을 확인해 주세요.');
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    onStatus('등록 결과 확인 중… (' + attempt + '/2)');
+    try {
+      const matching = (await readTopics(5000)).filter(matches);
+      const added = previousIds && matching.find(item => item['Topic ID'] && !previousIds.has(item['Topic ID']));
+      if (added && previousCount !== null && matching.length > previousCount) return added;
+    } catch (_) { /* Finish after two bounded checks; never automatically send another POST. */ }
+  }
+  throw new Error('등록 결과를 확인하지 못했습니다. 저장되었을 수 있으니 창을 닫고 목록을 새로고침해 확인해 주세요. 중복 등록을 피하려면 바로 다시 등록하지 마세요. 입력 내용은 유지됩니다.');
 }
-
 
 const pendingTopicEdits = new Map();
 const failedTopicDrafts = new Map();
@@ -651,6 +651,7 @@ class ReadersNav extends HTMLElement {
 
     // Submit Topic Registration or Edit
     topicSubmitBtn.addEventListener("click", async () => {
+      if (topicSubmitBtn.disabled) return;
       const savedUser = localStorage.getItem("readers_user_id");
       if (!savedUser) {
         topicErrorMsg.textContent = "로그인 정보가 유실되었습니다. 다시 로그인해 주세요.";
@@ -718,9 +719,10 @@ class ReadersNav extends HTMLElement {
         } else {
           const registeredTopic = await registerTopic({
             id: savedUser, book: bookVal, subject: subjectVal, topic: topicVal, url: urlVal, review: reviewVal
-          });
+          }, status => { topicSubmitBtn.textContent = status; });
           topicModal.style.display = "none";
           window.dispatchEvent(new CustomEvent("readers-topic-added", { detail: registeredTopic }));
+          alert("토픽이 등록되었습니다.");
         }
       } catch (err) {
         topicErrorMsg.textContent = err.message || err.toString();
