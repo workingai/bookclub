@@ -1163,6 +1163,22 @@ customElements.define('readers-archive', ReadersArchive);
 
 
 
+const topicCommentCounts = new Map();
+const pendingCommentCounts = new Map();
+function loadTopicCommentCount(topicId) {
+  if (pendingCommentCounts.has(topicId)) return pendingCommentCounts.get(topicId);
+  const previous = topicCommentCounts.get(topicId);
+  const request = topicRequestJSON(NAV_API_URL+'?action=getComments&topicId='+encodeURIComponent(topicId)+'&_='+Date.now(), {}, 45000)
+    .then(rows => {
+      if (!Array.isArray(rows)) throw new Error(rows?.error || '댓글 조회에 실패했습니다.');
+      // Preserve newer counts loaded or updated in the detail view.
+      if (topicCommentCounts.get(topicId) === previous) topicCommentCounts.set(topicId, {count: rows.length});
+      return topicCommentCounts.get(topicId).count;
+    })
+    .finally(() => pendingCommentCounts.delete(topicId));
+  pendingCommentCounts.set(topicId, request);
+  return request;
+}
 const commentDrafts = new Map();
 function mountTopicComments(container, topic) {
   const topicId = topic['Topic ID'];
@@ -1179,6 +1195,7 @@ function mountTopicComments(container, topic) {
   const sync=()=>{submit.disabled=loading||state.pending;refresh.disabled=loading||state.pending;input.readOnly=state.pending;submit.textContent=state.pending?'등록 중…':'댓글 등록';section.querySelector('.limit').textContent=input.value.length+' / 3000';};
   input.addEventListener('input',()=>{state.draft=input.value;sync();});
   const paint=()=>{
+    topicCommentCounts.set(topicId, {count: comments.length});
     list.replaceChildren();section.querySelector('.count').textContent='('+comments.length+')';
     if(!comments.length) list.textContent='아직 댓글이 없습니다. 첫 생각을 나눠 주세요.';
     comments.forEach(c=>{const article=document.createElement('article');article.className='comment-entry';const meta=document.createElement('div');meta.className='comment-meta';meta.textContent=c.AuthorID+' · '+c.CreatedAt;const body=document.createElement('div');body.className='comment-body';body.textContent=c.Content;article.append(meta,body);list.append(article);});
@@ -1286,6 +1303,10 @@ class ReadersTopics extends HTMLElement {
           min-width: 0;
         }
         .topic-title {
+          display: flex;
+          align-items: baseline;
+          gap: 6px;
+          min-width: 0;
           font-size: 16px;
           color: #1F2937;
           font-weight: 600;
@@ -1294,6 +1315,15 @@ class ReadersTopics extends HTMLElement {
           overflow: hidden;
           text-overflow: ellipsis;
           transition: color 0.15s ease;
+        }
+        .topic-subject {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .topic-comment-count {
+          flex-shrink: 0;
+          color: #2A6B52;
         }
         .topic-meta {
           display: flex;
@@ -1626,7 +1656,26 @@ class ReadersTopics extends HTMLElement {
           </div>
         `;
 
-        row.querySelector(".topic-title").textContent = subjectText;
+        const title = row.querySelector(".topic-title");
+        const subject = document.createElement('span');
+        subject.className = 'topic-subject';
+        subject.textContent = subjectText;
+        const countLabel = document.createElement('span');
+        countLabel.className = 'topic-comment-count';
+        title.append(subject, countLabel);
+        const showCount = count => {
+          countLabel.textContent = count > 0 ? '('+count+')' : '';
+          countLabel.hidden = !(count > 0);
+          if (count > 0) countLabel.setAttribute('aria-label', '댓글 '+count+'개');
+          else countLabel.removeAttribute('aria-label');
+        };
+        const topicId = item['Topic ID'];
+        showCount(topicCommentCounts.get(topicId)?.count);
+        if (topicId) {
+          loadTopicCommentCount(topicId).then(showCount).catch(error => {
+            console.warn('Failed to load topic comment count', error);
+          });
+        }
 
         row.addEventListener("click", () => {
           renderDetail(item);
