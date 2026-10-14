@@ -1236,6 +1236,19 @@ function currentTopicMonth() {
   return parts.find(p=>p.type==='year').value + '-' + parts.find(p=>p.type==='month').value;
 }
 
+function pastTopicMonths(currentMonth) {
+  const [year, month] = currentMonth.split('-').map(Number);
+  const months = [];
+  for (let index = year * 12 + month - 2; index >= 2026 * 12 + 8; index--) {
+    months.push(Math.floor(index / 12) + '-' + String(index % 12 + 1).padStart(2, '0'));
+  }
+  return months;
+}
+function topicMonthLabel(month) {
+  const [year, number] = month.split('-');
+  return year + '년 ' + Number(number) + '월';
+}
+
 class ReadersTopics extends HTMLElement {
   disconnectedCallback() { this.cleanupTopicMonth?.(); }
   connectedCallback() {
@@ -1246,6 +1259,30 @@ class ReadersTopics extends HTMLElement {
           display: block;
           width: 100%;
           font-family: 'Noto Sans KR', sans-serif;
+        }
+        .topic-month-toolbar {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          flex-wrap: wrap;
+          gap: 10px;
+          margin-bottom: 18px;
+        }
+        .topic-month-select {
+          box-sizing: border-box;
+          max-width: 100%;
+          padding: 10px 14px;
+          border: 1px solid #CBD5D1;
+          border-radius: 8px;
+          background: white;
+          color: #2A6B52;
+          font: inherit;
+          font-size: 14px;
+          cursor: pointer;
+        }
+        .topic-month-select:focus-visible {
+          outline: 2px solid #2A6B52;
+          outline-offset: 2px;
         }
         .topic-list {
           display: flex;
@@ -1550,6 +1587,7 @@ class ReadersTopics extends HTMLElement {
 
     let topicsData = [];
     let currentDetailItem = null;
+    let selectedTopicMonth = ''; // Empty follows the current month automatically.
     const root = shadow.getElementById("topics-root");
 
     const CACHE_KEY = "readers_topics_cache_v2";
@@ -1622,12 +1660,27 @@ class ReadersTopics extends HTMLElement {
     const renderList = () => {
       currentDetailItem = null;
 
-      root.innerHTML = `<div id="topics-container" class="topic-list"></div>`;
+      root.innerHTML = `<div class="topic-month-toolbar">
+        <select class="topic-month-select" aria-label="토픽 월 선택"></select>
+      </div><div id="topics-container" class="topic-list"></div>`;
+      const monthSelect = root.querySelector('.topic-month-select');
+      const currentMonth = currentTopicMonth();
+      [currentMonth, ...pastTopicMonths(currentMonth)].forEach(month => {
+        const option = document.createElement('option');
+        option.value = month === currentMonth ? '' : month;
+        option.textContent = topicMonthLabel(month);
+        monthSelect.append(option);
+      });
+      monthSelect.value = selectedTopicMonth;
+      monthSelect.addEventListener('change', () => {
+        selectedTopicMonth = monthSelect.value;
+        renderList();
+      });
       const container = root.querySelector("#topics-container");
 
-      const visibleTopics = topicsData.filter(item => topicMonthKey(item.Date || item.date) === currentTopicMonth());
+      const visibleTopics = topicsData.filter(item => topicMonthKey(item.Date || item.date) === (selectedTopicMonth || currentTopicMonth()));
       if (visibleTopics.length === 0) {
-        container.innerHTML = `<div style="text-align: center; color: oklch(0.5 0.02 60); font-size: 14px; padding: 40px 0;">이번 달에 등록된 토픽이 없습니다. 첫 번째 토픽을 등록해 보세요!</div>`;
+        container.innerHTML = `<div style="text-align: center; color: oklch(0.5 0.02 60); font-size: 14px; padding: 40px 0;">${selectedTopicMonth ? topicMonthLabel(selectedTopicMonth) + '에 등록된 토픽이 없습니다.' : '이번 달에 등록된 토픽이 없습니다. 첫 번째 토픽을 등록해 보세요!'}</div>`;
         return;
       }
 
@@ -1693,7 +1746,7 @@ class ReadersTopics extends HTMLElement {
     };
 
     const renderDetail = (item) => {
-      if (topicMonthKey(item.Date || item.date) !== currentTopicMonth()) { renderList(); return; }
+      if (topicMonthKey(item.Date || item.date) !== (selectedTopicMonth || currentTopicMonth())) { renderList(); return; }
       currentDetailItem = item;
 
       const bookText = item.Book || item.book || '자유 도서/이슈';
@@ -1905,7 +1958,8 @@ class ReadersTopics extends HTMLElement {
     loadData();
 
     window.addEventListener('readers-show-topic-list', () => {
-      if (currentDetailItem) renderList();
+      selectedTopicMonth = '';
+      renderList();
     });
 
     let displayedMonth = currentTopicMonth();
@@ -1924,6 +1978,7 @@ class ReadersTopics extends HTMLElement {
         // Optimistic UI Update: Prepend newly added topic immediately
         topicsData = [e.detail, ...topicsData.filter(item => !isSameTopic(item, e.detail))];
         try { localStorage.setItem(CACHE_KEY, JSON.stringify(topicsData)); } catch (err) { console.warn("Topic cache:", err); }
+        selectedTopicMonth = '';
         renderDetail(e.detail);
       }
       loadData();
