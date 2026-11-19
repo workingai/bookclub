@@ -219,7 +219,7 @@ class ReadersNav extends HTMLElement {
 
       <!-- Admin Modal Overlay -->
       <div id="admin-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
-        <div style="background:white; padding:32px; border-radius:12px; width:440px; box-shadow:0 20px 40px rgba(0,0,0,0.2); box-sizing:border-box; font-family:'Noto Sans KR',sans-serif; position:relative; color: #333; max-height: 90vh; overflow-y: auto;">
+        <div style="background:white; padding:32px; border-radius:12px; width:440px; max-width:calc(100vw - 32px); box-shadow:0 20px 40px rgba(0,0,0,0.2); box-sizing:border-box; font-family:'Noto Sans KR',sans-serif; position:relative; color: #333; max-height: 90vh; overflow-y: auto;">
           <button id="admin-modal-close-btn" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:22px; cursor:pointer; color:#999; line-height:1;">&times;</button>
           
           <h3 style="margin:0 0 24px; font-size:18px; font-weight:700; color:#2A6B52; border-bottom: 2px solid #E8F0ED; padding-bottom: 12px;">모임 일정 관리 (Admin)</h3>
@@ -460,6 +460,7 @@ class ReadersNav extends HTMLElement {
         if (savedUser) {
           return `
             <span style="color:#2A6B52; font-weight:600; font-size:${isMobile ? '14px' : '13px'};">${savedUser} 님</span>
+            ${savedUser === "정훈" ? `<button type="button" class="admin-btn" style="background:#2A6B52;border:1px solid #2A6B52;color:white;padding:6px 12px;border-radius:6px;cursor:pointer;font-weight:600;font-size:12px;font-family:inherit;line-height:1.2;">관리자</button>` : ""}
             <button class="logout-btn" style="background:none; border:1px solid #2A6B52; color:#2A6B52; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:600; font-size:12px; font-family:'Noto Sans KR',sans-serif; transition:all 0.2s ease; line-height:1.2;">로그아웃</button>
           `;
         } else {
@@ -472,9 +473,17 @@ class ReadersNav extends HTMLElement {
       if (authContainer) authContainer.innerHTML = makeAuthHTML(false);
       if (authContainerMobile) authContainerMobile.innerHTML = makeAuthHTML(true);
 
+      shadow.querySelectorAll('.admin-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          hamburgerBtn.classList.remove('active');
+          mobileMenu.classList.remove('active');
+          window.dispatchEvent(new CustomEvent('open-admin-modal'));
+        });
+      });
       // Attach logout listener
       shadow.querySelectorAll(".logout-btn").forEach(btn => {
         btn.addEventListener("click", () => {
+          shadow.getElementById("admin-modal").style.display = "none";
           localStorage.removeItem("readers_user_id");
           updateAuthState();
           window.dispatchEvent(new CustomEvent("readers-logout"));
@@ -762,6 +771,10 @@ class ReadersNav extends HTMLElement {
         return;
       }
       
+      if (adminSubmitBtn.disabled) return;
+      adminStartAmPm.value = adminEndAmPm.value = "오후";
+      adminStartHour.value = "2"; adminEndHour.value = "5";
+      adminStartMin.value = adminEndMin.value = "00";
       // Reset fields
       adminDateInput.value = "";
       adminNoticeInput.value = "";
@@ -775,6 +788,11 @@ class ReadersNav extends HTMLElement {
 
     // Admin Submit
     adminSubmitBtn.addEventListener("click", async () => {
+      if (adminSubmitBtn.disabled) return;
+      if (localStorage.getItem('readers_user_id') !== '정훈') {
+        adminModal.style.display = 'none';
+        return;
+      }
       const dateVal = adminDateInput.value;
       const startAmPmVal = adminStartAmPm.value;
       const startHourVal = adminStartHour.value;
@@ -800,6 +818,17 @@ class ReadersNav extends HTMLElement {
         return;
       }
 
+      const minutes = (ampm, hour, minute) => (Number(hour) % 12 + (ampm === '오후' ? 12 : 0)) * 60 + Number(minute);
+      if (minutes(endAmPmVal, endHourVal, endMinVal) <= minutes(startAmPmVal, startHourVal, startMinVal)) {
+        adminErrorMsg.textContent = '종료 시간은 시작 시간보다 늦어야 합니다.';
+        adminErrorMsg.style.display = 'block';
+        return;
+      }
+      if (mapVal && !topicLinkURL(mapVal)) {
+        adminErrorMsg.textContent = '지도 링크는 http:// 또는 https:// 주소를 입력해 주세요.';
+        adminErrorMsg.style.display = 'block';
+        return;
+      }
       const startVal = `${startAmPmVal} ${startHourVal}시 ${startMinVal}분`;
       const endVal = `${endAmPmVal} ${endHourVal}시 ${endMinVal}분`;
 
@@ -815,6 +844,7 @@ class ReadersNav extends HTMLElement {
           },
           body: JSON.stringify({
             action: "addMeeting",
+            id: localStorage.getItem("readers_user_id"),
             date: dateVal,
             start: startVal,
             end: endVal,
@@ -876,11 +906,17 @@ class ReadersNav extends HTMLElement {
     });
 
     bookSubmitBtn.addEventListener("click", async () => {
+      if (bookSubmitBtn.disabled) return;
       const nameVal = bookNameInput.value.trim();
       const urlVal = bookUrlInput.value.trim();
       const savedUser = localStorage.getItem("readers_user_id");
 
       bookErrorMsg.style.display = "none";
+      if (!savedUser) {
+        bookErrorMsg.textContent = '로그인 후 등록해 주세요.';
+        bookErrorMsg.style.display = 'block';
+        return;
+      }
 
       if (!nameVal) {
         bookErrorMsg.textContent = "추천할 작품명 또는 주제를 입력해 주세요.";
@@ -902,7 +938,6 @@ class ReadersNav extends HTMLElement {
             action: "addBook",
             name: nameVal,
             url: urlVal,
-            date: new Date().toISOString().slice(0, 19).replace('T', ' '),
             recommender: savedUser
           })
         });
