@@ -1636,7 +1636,7 @@ class ReadersTopics extends HTMLElement {
     let currentDetailItem = null;
     let selectedTopicMonth = ''; // Empty follows the current month automatically.
     // Add each published monthly PDF here; unpublished months must not fall back to another month.
-    const topicPdfByMonth = { '2026-10': '/topics/2026-10/' };
+    const topicPdfByMonth = { '2026-10': '/topics/2026-10/', '2026-11': '/topics/2026-11/' };
     this.openTopicPdf = () => {
       const month = selectedTopicMonth || currentTopicMonth();
       const pdf = topicPdfByMonth[month];
