@@ -468,6 +468,7 @@ class ReadersNav extends HTMLElement {
         if (savedUser) {
           return `
             <span style="color:#2A6B52; font-weight:600; font-size:${isMobile ? '14px' : '13px'};">${savedUser} 님</span>
+            <readers-push-toggle></readers-push-toggle>
             ${savedUser === "정훈" ? `<button type="button" class="admin-btn" style="background:#2A6B52;border:1px solid #2A6B52;color:white;padding:6px 12px;border-radius:6px;cursor:pointer;font-weight:600;font-size:12px;font-family:inherit;line-height:1.2;">관리자</button>` : ""}
             <button class="logout-btn" style="background:none; border:1px solid #2A6B52; color:#2A6B52; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:600; font-size:12px; font-family:'Noto Sans KR',sans-serif; transition:all 0.2s ease; line-height:1.2;">로그아웃</button>
           `;
@@ -1715,7 +1716,18 @@ class ReadersTopics extends HTMLElement {
       return str;
     };
 
+    let pendingPushTopic = new URLSearchParams(location.search).get('topic');
     const renderList = () => {
+      if (pendingPushTopic) {
+        const target = topicsData.find(item => item['Topic ID'] === pendingPushTopic);
+        if (target) {
+          pendingPushTopic = null;
+          selectedTopicMonth = topicMonthKey(target.Date || target.date);
+          renderDetail(target);
+          this.scrollIntoView({block:'start'});
+          return;
+        }
+      }
       currentDetailItem = null;
 
       root.innerHTML = `<div class="topic-month-toolbar">
