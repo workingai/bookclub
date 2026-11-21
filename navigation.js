@@ -74,6 +74,14 @@ async function registerTopic(payload, onStatus = () => {}) {
 
 const pendingTopicEdits = new Map();
 const failedTopicDrafts = new Map();
+// Use a native listener: the page renderer does not support string onClick props on buttons.
+document.addEventListener('click', event => {
+  const button = event.target.closest?.('[data-topic-pdf-view]');
+  if (!button) return;
+  event.preventDefault();
+  window.dispatchEvent(new CustomEvent('readers-open-topic-pdf'));
+});
+
 const topicSaveMessages = new Map();
 const topicEditKey = item => item['Topic ID'] || JSON.stringify([item.ID,item.Date,item.Book,item.Subject,item.Topic]);
 function emitTopicEdit(oldTopic, updatedTopic) {
