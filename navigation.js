@@ -1285,7 +1285,10 @@ function topicMonthLabel(month) {
 }
 
 class ReadersTopics extends HTMLElement {
-  disconnectedCallback() { this.cleanupTopicMonth?.(); }
+  disconnectedCallback() {
+    this.cleanupTopicMonth?.();
+    window.removeEventListener('readers-open-topic-pdf', this.openTopicPdf);
+  }
   connectedCallback() {
     const shadow = this.attachShadow({ mode: 'open' });
     shadow.innerHTML = `
@@ -1623,6 +1626,18 @@ class ReadersTopics extends HTMLElement {
     let topicsData = [];
     let currentDetailItem = null;
     let selectedTopicMonth = ''; // Empty follows the current month automatically.
+    // Add each published monthly PDF here; unpublished months must not fall back to another month.
+    const topicPdfByMonth = { '2026-10': '/topics/bookclub-2026-10.pdf' };
+    this.openTopicPdf = () => {
+      const month = selectedTopicMonth || currentTopicMonth();
+      const pdf = topicPdfByMonth[month];
+      if (pdf) {
+        window.open(pdf, '_blank', 'noopener');
+      } else {
+        alert(topicMonthLabel(month) + ' 토픽 자료는 아직 없거나 준비 중입니다.');
+      }
+    };
+    window.addEventListener('readers-open-topic-pdf', this.openTopicPdf);
     const root = shadow.getElementById("topics-root");
 
     const CACHE_KEY = "readers_topics_cache_v2";
